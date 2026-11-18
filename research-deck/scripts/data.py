@@ -183,17 +183,21 @@ class Sources:
                 options.append(("evidence_pair", "同页比较两份原始图件"))
             else:
                 options.append(("contrast", "对照两组文字说明"))
-        if any(field in page for field in ("file", "poster", "region")):
+        if any(field in page for field in ("file", "poster", "region", "panels")):
             if "poster" in page or str(page.get("file", "")).lower().endswith(".mp4"):
                 options.append(("video", "操作回放及其代表帧"))
             elif "region" in page:
                 options.append(("detail", "在完整图件上定位并放大选区"))
+            elif "panels" in page:
+                options.append(("figure_panels", "将论文原图中的分图与各自的解释对齐"))
             else:
                 options.append(("figure", "讲解一份原始图件"))
-        if "dataset" in page or "conditions" in page:
+        if "dataset" in page or "conditions" in page or "illustration" in page:
             required(page, ["dataset", "columns"])
             if "conditions" in page:
                 options.append(("condition_comparison", "按同一行键展示条件图与测量记录"))
+            elif "illustration" in page:
+                options.append(("chart", "同页解释实验条件与数值比较"))
             else:
                 options.append(self.dataset_layout(page))
         if len(options) == 1:
@@ -271,6 +275,11 @@ class Sources:
         resolved["layout"], resolved["layout_reason"] = layout, reason
         if layout in DATA_LAYOUTS:
             citations.append(self.tables[resolved["dataset"]][0]["source"])
+        if "illustration" in resolved:
+            if layout != "chart":
+                raise ValueError("illustration 适用于 chart")
+            required(resolved["illustration"], ["file", "alt", "source", "caption"])
+            citations.append(resolved["illustration"]["source"])
         if layout == "condition_comparison":
             _, records = self.condition_records(resolved)
             citations.extend(image["source"] for _, image in records)

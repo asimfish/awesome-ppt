@@ -1,0 +1,42 @@
+{
+  "mode": "conference",
+  "language": "en",
+  "style": "plates",
+  "title": "Iris versicolor and the Iris measurements",
+  "datasets": {
+    "iris": {"file": "summary.csv", "key": "Species", "source": "R. Fisher · UCI Iris · DOI 10.24432/C56C76"}
+  },
+  "slides": [
+    {
+      "section": "Botanical plate",
+      "title": "Two views of Iris versicolor",
+      "file": "plate-21.jpg",
+      "source": "James Sowerby · The Botanical Magazine, vol. I, plate 21",
+      "alt": "Historical illustration of Iris versicolor",
+      "panels": [
+        {"region": [0.19, 0.075, 0.86, 0.33], "heading": "Open flower", "text": "Dark violet segments surround the pale centre."},
+        {"region": [0.16, 0.30, 0.64, 0.58], "heading": "Unopened buds", "text": "Two pointed buds sit below the open flower."}
+      ],
+      "notes": "Both views come from plate 21 of The Botanical Magazine. The crops retain the full illustration in the editable file."
+    },
+    {
+      "section": "Measurements",
+      "title": "Mean petal length in three iris species",
+      "dataset": "iris",
+      "columns": ["Mean (cm)"],
+      "kind": "bar",
+      "min": 0,
+      "max": 7,
+      "decimals": 2,
+      "axis_title": "Mean petal length (cm)",
+      "illustration": {
+        "file": "plate-21.jpg",
+        "source": "James Sowerby · The Botanical Magazine, vol. I, plate 21",
+        "alt": "Sowerby's illustration of Iris versicolor",
+        "caption": "Iris versicolor, plate 21"
+      },
+      "reading": "The UCI sample contains 50 plants of each species.",
+      "notes": "Each bar uses the arithmetic mean of the 50 measurements for one species. Sowerby's plate illustrates one of the three species."
+    }
+  ]
+}

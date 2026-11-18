@@ -46,6 +46,70 @@ class DeckChecks(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
         return draft, json.loads((draft / "deck.json").read_text())
 
+    def test_panel_crops_and_chart_illustration_survive_portable_draft(self):
+        source = self.work / "source"
+        source.mkdir()
+        Image.new("RGB", (360, 200), "navy").save(source / "instrument.png")
+        (source / "bench.csv").write_text("Setting,Score\nHigh,86.7\nLow,60.0\n")
+        image = {"file": "instrument.png", "alt": "Optical bench", "source": "Figure 1"}
+        spec = {"mode": "conference", "style": "plates", "language": "en",
+                "datasets": {"run": {"file": "bench.csv", "key": "Setting", "source": "Table 2"}},
+                "slides": [
+                    dict(image, title="Two stages", panels=[
+                        {"region": [0, 0, 1, .55], "heading": "Prepare", "text": "Align the sample."},
+                        {"region": [.1, .72, .9, 1], "heading": "Read", "text": "Measure the output."}]),
+                    {"title": "Test conditions", "dataset": "run", "columns": ["Score"], "kind": "bar",
+                     "illustration": dict(image, caption="Measurement rig"), "reading": "Identical optics.",
+                     "min": 0, "max": 100},
+                    {"layout": "table", "title": "Measurements", "dataset": "run", "columns": ["Score"]}]}
+        original = source / "deck.json"
+        original.write_text(json.dumps(spec))
+        draft = self.work / "portable"
+        result = self.cli("draft", original, draft)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        shutil.rmtree(source)
+        spec = json.loads((draft / "deck.json").read_text())
+        deck = Deck(spec, draft)
+        self.assertEqual([p["layout"] for p in deck.pages], ["figure_panels", "chart", "table"])
+        self.assertIn("Figure 1", deck.pages[1]["citations"])
+        prs = deck.build()
+        pics = [s for s in prs.slides[0].shapes if s._element.xpath("./p:nvPicPr")]
+        self.assertEqual(len(pics), 2)
+        self.assertEqual(pics[1].crop_top, .72)
+        self.assertAlmostEqual(pics[1].width / pics[1].height, .8 * 360 / (.28 * 200), places=4)
+        result_slide = prs.slides[1]
+        chart = next(shape for shape in result_slide.shapes if shape.has_chart)
+        photo = next(shape for shape in result_slide.shapes if shape._element.xpath("./p:nvPicPr"))
+        self.assertLess(photo.left + photo.width, chart.left)
+        self.assertEqual(chart.chart.series[0].values, (86.7, 60.0))
+        self.assertNotIn("max", chart.chart._chartSpace.xpath(".//c:catAx/c:crosses/@val"))
+        table = next(shape.table for shape in prs.slides[2].shapes if shape.has_table)
+        self.assertTrue(table.cell(0, 0)._tc.xpath("./a:tcPr/a:lnT/a:solidFill"))
+        self.assertTrue(table.cell(1, 0)._tc.xpath("./a:tcPr/a:lnT/a:solidFill"))
+        self.assertTrue(table.cell(2, 0)._tc.xpath("./a:tcPr/a:lnT/a:noFill"))
+        if os.environ.get("AWESOMEPPT_RENDER_TESTS") == "1":
+            clean = self.work / "plates.pptx"
+            preview = clean.with_suffix(".pdf")
+            prs.save(clean)
+            result = self.cli("preview", clean, preview)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            with fitz.open(preview) as document:
+                color = tuple(int(deck.style["accent"][i:i + 2], 16) / 255 for i in (0, 2, 4))
+                bars = sorted((d["rect"] for d in document[1].get_drawings()
+                               if d.get("fill") and d["rect"].width > 20 and d["rect"].height > 4
+                               and max(abs(x - y) for x, y in zip(d["fill"], color)) < .015),
+                              key=lambda rect: rect.y0)
+                self.assertEqual(len(bars), 2)
+                self.assertAlmostEqual(bars[0].x0, bars[1].x0, delta=0.5)
+                self.assertAlmostEqual(bars[0].width / bars[1].width, 86.7 / 60, delta=0.02)
+        pics[1].crop_top = .62
+        photo.left = chart.left
+        changed = self.work / "changes.pptx"
+        prs.save(changed)
+        findings = []
+        compare_source(Deck(spec, draft), changed, inventory(changed), lambda *args: findings.append(args))
+        self.assertEqual([(f[1], f[2]) for f in findings], [(1, "source_picture"), (2, "source_picture")])
+
     def test_reading_guide_tracks_contiguous_papers_and_distinguishes_discussion(self):
         refs = {k: {"title": f"Study {k}", "byline": "Chen et al.", "url": f"https://example.org/{k}"}
                 for k in ("a", "b")}

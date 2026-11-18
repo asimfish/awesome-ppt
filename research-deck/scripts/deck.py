@@ -76,6 +76,8 @@ def page_asset_fields(page):
             yield frame, "file"
     if "plate" in page:
         yield page["plate"], "file"
+    if "illustration" in page:
+        yield page["illustration"], "file"
 
 
 def asset_fields(spec):

@@ -4,6 +4,7 @@ import io
 import json
 import math
 import platform
+import re
 import shutil
 import subprocess
 import tempfile
@@ -37,6 +38,7 @@ LAYOUTS = (
     "process",
     "handoff",
     "figure",
+    "figure_panels",
     "detail",
     "evidence_pair",
     "sequence",
@@ -103,6 +105,25 @@ def rectangle(slide, x, y, w, h, color):
     for effect in s._element.xpath("./p:style/a:effectRef"):
         effect.set("idx", "0")
     return s
+
+
+def table_rules(cell, row, last_row, style):
+    """Attach the three horizontal rules to cells so they follow PowerPoint edits."""
+    props = cell._tc.get_or_add_tcPr()
+    for edge in ("lnB", "lnT", "lnR", "lnL"):
+        line = OxmlElement("a:" + edge)
+        outer = (edge == "lnT" and row == 0) or (edge == "lnB" and row == last_row)
+        header = (edge == "lnB" and row == 0) or (edge == "lnT" and row == 1)
+        if outer or header:
+            line.set("w", str(Pt(1.35 if outer else 0.8)))
+            fill = OxmlElement("a:solidFill")
+            color = OxmlElement("a:srgbClr")
+            color.set("val", style["ink" if outer else "line"])
+            fill.append(color)
+            line.append(fill)
+        else:
+            line.append(OxmlElement("a:noFill"))
+        props.insert(0, line)
 
 
 def text_box(
@@ -190,14 +211,29 @@ def image_contain(slide, buf, x, y, w, h, alt):
     return pic
 
 
-def magnified_region(slide, buf, whole, region, box, alt, color):
-    """Highlight a source rectangle and show an editable crop of the same image."""
+def region_bounds(region):
     if (not isinstance(region, (list, tuple)) or len(region) != 4
             or any(type(v) not in (float, int) for v in region)):
         raise ValueError("region 需要归一化的左、上、右、下四个坐标")
     left, top, right, bottom = region
     if not (0 <= left < right <= 1 and 0 <= top < bottom <= 1):
         raise ValueError("region 超出图幅或面积为零")
+    return left, top, right, bottom
+
+
+def cropped_picture(slide, buf, bounds, x, y, w, h, alt):
+    left, top, right, bottom = bounds
+    buf.seek(0)
+    pic = slide.shapes.add_picture(buf, x, y, w, h)
+    pic.crop_left, pic.crop_top = left, top
+    pic.crop_right, pic.crop_bottom = 1 - right, 1 - bottom
+    pic._element.nvPicPr.cNvPr.set("descr", alt)
+    return pic
+
+
+def magnified_region(slide, buf, whole, region, box, alt, color):
+    """Highlight a source rectangle and show an editable crop of the same image."""
+    left, top, right, bottom = region_bounds(region)
     source_w = whole.width * (right - left)
     source_h = whole.height * (bottom - top)
     x, y, w, h = (I(v) for v in box)
@@ -213,12 +249,7 @@ def magnified_region(slide, buf, whole, region, box, alt, color):
     frame.line.color.rgb = rgb(color)
     frame.line.width = Pt(2)
     dw, dh = round(source_w * scale), round(source_h * scale)
-    buf.seek(0)
-    detail = slide.shapes.add_picture(buf, x + (w - dw) // 2, y + (h - dh) // 2, dw, dh)
-    detail.crop_left, detail.crop_top = left, top
-    detail.crop_right, detail.crop_bottom = 1 - right, 1 - bottom
-    detail._element.nvPicPr.cNvPr.set("descr", alt)
-    return detail
+    return cropped_picture(slide, buf, region, x + (w - dw) // 2, y + (h - dh) // 2, dw, dh, alt)
 
 
 def attach_formula(slide, latex, x, y, w, h, color):
@@ -542,6 +573,20 @@ class Deck:
             )
 
     def split_cover(self, p):
+        if "plate" in p and self.style["treatment"] == "plates":
+            plate = p["plate"]
+            required(plate, ["file", "alt", "caption", "source"])
+            self.rect(5.82, 0, W - 5.82, H, "panel")
+            self.txt(p.get("eyebrow") or self.mode["name" if self.lang == "zh" else "en"],
+                     0.75, 0.65, 4.78, 0.55, 19, 13, "accent", True)
+            self.txt(p["title"], 0.75, 1.88, 4.95, 2.62, 57, 30, "ink", True, True, name="Title")
+            if p.get("subtitle"):
+                self.txt(p["subtitle"], 0.75, 4.74, 4.78, 1.16, 23, 15, "accent")
+            self.txt(p.get("credit") or self.spec.get("presenter", ""), 0.75, 6.72, 4.88, 0.42, 14, 10, "muted")
+            asset = safe_figure(self.directory / plate["file"], plate)
+            image_contain(self.slide, asset, 5.97, 0.38, W - 6.14, 6.24, plate["alt"])
+            self.txt(plate["caption"], 6.18, 6.73, W - 6.58, 0.40, 14, 10, "muted")
+            return
         self.rect(0, 0, W, H, "hero")
         left, divider = 0.72, 7.35
         self.txt(
@@ -651,7 +696,7 @@ class Deck:
             0.74,
             self.w,
             0.87,
-            32,
+            36 if t == "plates" else 32,
             20,
             head_color,
             True,
@@ -730,7 +775,8 @@ class Deck:
             required(col, ["heading", "text"])
             w = (self.w - 0.45) / 2
             x = self.x + i * (w + 0.45)
-            self.rect(x, 2.14, w, 4.20, "panel")
+            if self.style["treatment"] != "plates":
+                self.rect(x, 2.14, w, 4.20, "panel")
             self.rect(x, 2.14, w, 0.065, "accent" if i else "line")
             self.txt(
                 col["heading"], x + 0.25, 2.48, w - 0.5, 0.74, 25, 17, "accent", True
@@ -825,6 +871,14 @@ class Deck:
         col = (self.w - stub) / len(records)
         height = 0.66 * len(heads)
         top = (6.20 if p.get("caption") else 6.56) - height
+        if "summary" in p:
+            summary = p["summary"]
+            required(summary, ["value", "label"])
+            space = top - 1.94
+            self.txt(summary["value"], self.x, 1.94 + space * 0.15, stub - 0.12, space * 0.43,
+                     38, 16, "accent", True, name="Summary value")
+            self.txt(summary["label"], self.x, 1.94 + space * 0.60, stub - 0.12, space * 0.35,
+                     19, 13, "muted")
         for i, (_, item) in enumerate(records):
             buf = safe_figure(self.directory / item["file"], item)
             image_contain(self.slide, buf, self.x + stub + i * col + 0.07, 1.89,
@@ -866,8 +920,25 @@ class Deck:
         frames = p["frames"]
         gap = 0.18
         width = (self.w - gap * (len(frames) - 1)) / len(frames)
+        timed = any("time" in frame for frame in frames)
+        if timed:
+            if any(not isinstance(frame.get("time"), str) or not frame["time"].strip() for frame in frames):
+                raise ValueError("时间序列中的每一帧都需要有 time")
+            assets = [safe_figure(self.directory / frame["file"], frame) for frame in frames]
+            heights = []
+            for asset in assets:
+                with Image.open(asset) as im:
+                    heights.append(width * im.height / im.width)
+                asset.seek(0)
+            image_h = min(3.28, max(heights))
+            top = 1.87 + (3.28 - image_h) / 2
         for idx, frame in enumerate(frames):
             x = self.x + idx * (width + gap)
+            if timed:
+                self.txt(frame["time"], x, top, width, 0.42, 19, 14, "accent", True)
+                image_contain(self.slide, assets[idx], x, top + 0.52, width, image_h, frame["alt"])
+                self.txt(frame["label"], x, top + image_h + 0.65, width, 0.52, 23, 16, bold=True)
+                continue
             asset = safe_figure(self.directory / frame["file"], frame)
             image_contain(self.slide, asset, x, 1.93, width, 3.48, frame["alt"])
             self.rect(x, 5.54, width, 0.025, "line")
@@ -899,6 +970,14 @@ class Deck:
             first, last = entry["first"], entry["last"]
             pages = str(first) if first == last else f"{first}–{last}"
             self.rect(self.x, y, self.w, 0.015, "line")
+            if self.style["treatment"] == "plates":
+                col = self.w * 0.40
+                self.txt(entry["label"], self.x, y + 0.17, col - 0.28, height - 0.25, 27, 16, "ink", True)
+                self.txt(entry["topic"], self.x + col, y + 0.19, self.w - col - 1.36,
+                         height - 0.28, 20, 15, "muted")
+                self.txt(pages, self.x + self.w - 1.18, y + 0.16, 1.18, 0.52, 21, 15,
+                         "accent", align=PP_ALIGN.RIGHT)
+                continue
             self.txt(entry["label"], self.x, y + 0.08, self.w - 1.35, height * 0.45,
                      23, 15, "ink", True)
             self.txt(entry["topic"], self.x, y + height * 0.52, self.w - 1.35, height * 0.43,
@@ -920,6 +999,42 @@ class Deck:
             title.click_action.hyperlink.address = ref["url"]
             self.txt(ref["byline"], self.x + 0.70, y + title_height, width,
                      height - title_height - 0.02, 15, 11, "muted")
+
+    def figure_panels(self, p):
+        required(p, ["file", "alt", "source", "panels"])
+        panels = p["panels"]
+        if not isinstance(panels, list) or not 2 <= len(panels) <= 3:
+            raise ValueError("panels 需要 2–3 组原图选区和讲解")
+        buf = safe_figure(self.directory / p["file"], p)
+        with Image.open(buf) as im:
+            iw, ih = im.size
+        regions, aspects = [], []
+        for panel in panels:
+            required(panel, ["region", "heading", "text"])
+            bounds = region_bounds(panel["region"])
+            regions.append(bounds)
+            aspects.append((bounds[2] - bounds[0]) * iw / ((bounds[3] - bounds[1]) * ih))
+        image_w = self.w * 0.66
+        y = 1.84
+        bottom = 6.17 if p.get("caption") else 6.65
+        gap = 0.15
+        # Reserve a legible text row, then distribute extra height by the source panels' proportions.
+        base = 1.27
+        extra = bottom - y - len(panels) * base - (len(panels) - 1) * gap
+        total_weight = sum(1 / a for a in aspects)
+        for panel, bounds, aspect in zip(panels, regions, aspects):
+            height = base + extra / (aspect * total_weight)
+            dh = min(height, image_w / aspect)
+            dw = dh * aspect
+            cropped_picture(self.slide, buf, bounds, I(self.x + (image_w - dw) / 2), I(y + (height - dh) / 2),
+                            I(dw), I(dh), panel.get("alt", p["alt"] + " · " + panel["heading"]))
+            x, w = self.x + image_w + 0.35, self.w - image_w - 0.35
+            self.rect(x, y, w, 0.018, "line")
+            self.txt(panel["heading"], x, y + 0.10, w, 0.45, 22, 16, "accent", True)
+            self.txt(panel["text"], x, y + 0.64, w, height - 0.66, 21, 15)
+            y += height + gap
+        if p.get("caption"):
+            self.txt(p["caption"], self.x, 6.30, self.w, 0.44, 21, 16, "muted")
 
     def figure(self, p, movie=None):
         required(p, ["file", "alt", "source"])
@@ -965,16 +1080,20 @@ class Deck:
             highlights.update(
                 row[0] for row in rows if row[col_index] == rule["equals"]
             )
-        self.draw_table(heads, rows, widths, y, h, highlights, 17, 10)
+        self.draw_table(heads, rows, widths, y, h, highlights,
+                        22 if self.style["treatment"] == "plates" else 17, 10)
         if p.get("caption"):
             self.txt(p["caption"], self.x, 6.06, self.w, 0.54, 17, 12, "muted")
 
     def draw_table(self, heads, rows, widths, y, h, highlights, preferred, minimum, align_values=None):
+        ruled = self.style["treatment"] == "plates"
         tab = self.slide.shapes.add_table(
             len(rows) + 1, len(heads), I(self.x), I(y), I(self.w), I(h)
         ).table
         for i, v in enumerate(widths):
             tab.columns[i].width = I(self.w * v / sum(widths))
+        numeric_columns = {j for j in range(1, len(heads))
+                           if ruled and all(re.fullmatch(r"[\d\s.,/+%％±−–—-]+", str(row[j])) for row in rows)}
         for i, row in enumerate([heads, *rows]):
             for j, value in enumerate(row):
                 c = tab.cell(i, j)
@@ -982,11 +1101,13 @@ class Deck:
                 c.margin_top = c.margin_bottom = I(0.025)
                 c.vertical_anchor = MSO_ANCHOR.MIDDLE
                 c.fill.solid()
-                c.fill.fore_color.rgb = rgb(
-                    self.style["hero" if i == 0 else "panel" if i % 2 else "paper"]
-                )
+                fill = "hero" if i == 0 else "panel" if i % 2 else "paper"
+                if ruled:
+                    fill = "panel" if i and row[0] in highlights else "paper"
+                    table_rules(c, i, len(rows), self.style)
+                c.fill.fore_color.rgb = rgb(self.style[fill])
                 weight = i == 0 or row[0] in highlights
-                col = "onhero" if i == 0 else "ink"
+                col = "accent" if ruled and i == 0 else "onhero" if i == 0 else "ink"
                 size = fit_size(
                     str(value),
                     tab.columns[j].width / I(1) - 0.20,
@@ -997,6 +1118,8 @@ class Deck:
                 para = c.text_frame.paragraphs[0]
                 if j and align_values is not None:
                     para.alignment = align_values
+                elif j in numeric_columns:
+                    para.alignment = PP_ALIGN.RIGHT
                 run = para.add_run()
                 run.text = str(value)
                 font(run, self.face, size, self.style[col], weight)
@@ -1013,16 +1136,29 @@ class Deck:
             data.add_series(h, [float(number(r[j])) for r in rows], number_format=fmt)
         kind = {
             "column": XL_CHART_TYPE.COLUMN_CLUSTERED,
+            "bar": XL_CHART_TYPE.BAR_CLUSTERED,
             "line": XL_CHART_TYPE.LINE_MARKERS,
         }[p.get("kind", "column")]
         reading = p.get("reading")
-        below = caption_below(p)
+        illustration = p.get("illustration")
+        below = caption_below(p) or illustration is not None
         cw = self.w * (0.70 if reading and not below else 1)
         height = 4.04 if reading and below else 4.40
         label_size = 17 if below else 12
+        chart_x = self.x
+        if illustration is not None:
+            image_w = self.w * 0.40
+            asset = safe_figure(self.directory / illustration["file"], illustration)
+            image_contain(self.slide, asset, self.x, 1.94, image_w, height - 0.86, illustration["alt"])
+            self.txt(illustration["caption"], self.x, 1.96 + height - 0.75, image_w, 0.74,
+                     20, 15, "muted")
+            chart_x += image_w + 0.45
+            cw = self.w - image_w - 0.45
         chart = self.slide.shapes.add_chart(
-            kind, I(self.x), I(2.00), I(cw), I(height), data
+            kind, I(chart_x), I(2.00), I(cw), I(height), data
         ).chart
+        if kind == XL_CHART_TYPE.BAR_CLUSTERED:
+            chart.category_axis.reverse_order = True
         for auto_title in chart._chartSpace.xpath("./c:chart/c:autoTitleDeleted"):
             auto_title.set("val", "1")
         background = OxmlElement("c:spPr")

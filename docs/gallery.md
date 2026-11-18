@@ -7,6 +7,12 @@
 | How long is an iris petal? · Botanical research talk | [PPTX](decks/iris.pptx) | [PDF](decks/iris.pdf) | [UCI measurements and plate](../examples/iris) |
 | 馆藏检索准备好试点了吗？ · 中文季度评审 | [PPTX](decks/project-review.pptx) | [PDF](decks/project-review.pdf) | [模拟交付台账与逐页稿](../examples/project-review) |
 
+## Research plates · 研究图版
+
+The research-plate style pairs a cropped view with its explanation and places a specimen beside an editable chart. These two pages use Sowerby's botanical plate and the existing UCI Iris measurements. [Editable slide specification](../examples/iris/plate-layouts.json) · [Image and data credits](../examples/iris/SOURCE.md)
+
+![Two crops of a botanical plate and a horizontal chart of petal lengths](media/plate-layouts.png)
+
 ## Mode starters
 
 Each image below comes from the editable starter deck. Choose the question your audience needs answered, then download the corresponding PPTX. The six Chinese decks use an original, illustrative archive-retrieval project.

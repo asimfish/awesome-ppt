@@ -42,3 +42,4 @@ jobs:
           python research-deck/evals/test_deck.py
           DeckChecks.test_storyboard_routes_measured_conditions_and_detects_swapped_photos
           DeckChecks.test_observation_sequence_and_reading_links_survive_draft
+          DeckChecks.test_panel_crops_and_chart_illustration_survive_portable_draft

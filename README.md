@@ -60,7 +60,7 @@ For a project review, provide the requirements and the test ledger. The acceptan
 
 [![Six rendered slides showing the different modes and styles](docs/media/modes.png)](docs/gallery.md)
 
-Pick a mode for the audience's question and a style for the room. Six narrative modes and eight general visual styles can be combined. There are six additional campus treatments. The Chinese starters are complete worked examples. The Iris talk is an English example.
+Pick a mode for the audience's question and a style for the room. Six narrative modes and nine general visual styles can be combined. There are six additional campus treatments. The Chinese starters are complete worked examples. The Iris talk is an English example.
 
 ```sh
 python research-deck/scripts/deck.py starter acceptance review-work --style review

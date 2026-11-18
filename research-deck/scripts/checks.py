@@ -166,7 +166,7 @@ def evidence_pictures(package, part, layout, cache):
         crop = query(pic, "./p:blipFill/a:srcRect")
         bounds = tuple(int(crop[0].get(k, 0)) if crop else 0 for k in ("l", "t", "r", "b"))
         placement = ()
-        if layout in ("detail", "evidence_pair", "condition_comparison", "sequence"):
+        if layout in ("detail", "evidence_pair", "condition_comparison", "sequence", "figure_panels", "chart"):
             placement = tuple(tuple(sorted(el.attrib.items())) for el in query(pic, "./p:spPr/a:xfrm/*"))
         alt = tuple(query(pic, "./p:nvPicPr/p:cNvPr/@descr"))
         result[(cache[key], alt, bounds, placement)] += 1
@@ -225,7 +225,8 @@ def compare_source(reference, source, actual, record):
                 record("errors", i, "source_link", "文献标题或链接目标与逐页稿不一致")
             if layout == "handoff" and handoff_cells(expected_package, lhs) != handoff_cells(actual_package, rhs):
                 record("errors", i, "source_handoff", "责任方、操作与交付物的对应关系与逐页稿不一致")
-            if layout in ("figure", "detail", "evidence_pair", "condition_comparison", "sequence"):
+            if (layout in ("figure", "detail", "evidence_pair", "condition_comparison", "sequence", "figure_panels")
+                    or (layout == "chart" and "illustration" in reference.pages[i - 1])):
                 if evidence_pictures(expected_package, lhs, layout, expected_pixels) != evidence_pictures(
                     actual_package, rhs, layout, actual_pixels
                 ):

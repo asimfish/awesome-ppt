@@ -33,13 +33,14 @@
 | process | 方法、路线、操作步骤 | steps 为 2–4 组 heading、text |
 | handoff | 研制、实验或审查流程中的交接 | stages 为按讲解顺序排列的 2–4 组 owner、action、output，可设 caption 和 source。分别填写责任方、实际操作和交付物 |
 | figure | 论文原图、系统界面、照片 | file、alt、source；可设 caption。PDF 图件须有 pdf_page（从 1 起）与 crop（左、上、右、下归一化坐标）。位图直接按比例置入 |
+| figure_panels | 图 a、图 b 或图 c 各有独立的讲解 | file、alt、source、panels。每项含 region、heading、text，可写 alt。region 相对于可见原图，按左、上、右、下填写 0–1 坐标。原图在 PPTX 中保留，分图裁切可继续编辑 |
 | detail | 界面字段、仪器读数、方法图的局部 | file、alt、source、region、detail_label，可设 caption。region 是相对于已显示图幅的归一化左、上、右、下坐标。整图保留选区框，局部使用同一张图片的可编辑裁切。PDF 先按 pdf_page 和 crop 取图 |
 | evidence_pair | 同一实验的两个时点、条件或观测 | left、right 各含 heading、file、alt、source；每边可单独指定 PDF 页和裁切区域。两幅图在等宽区域内按原比例显示，可用 caption 写一句共同的观察结论 |
 | sequence | 按时间解读一次观测、操作或故障复现过程 | frames 为 2–4 个按时间排列的对象，各有 file、alt、label。source 可写在整页或逐帧填写；可选 caption。各图保留比例，标签独立可编辑 |
 | bibliography | 综述的延伸阅读、组会答疑 | cite 选 1–5 个文献键。每个题名可点击打开原始链接；可分多页，按书目登记顺序统一编号 |
 | condition_comparison | 每种观察条件各有原图和测量记录 | dataset、columns、conditions，可设 rows、caption。选择 2–4 个条件与 1–3 项指标，conditions 用精确 CSV 行键分别关联 file、alt、source。图片与原生表格按所选行的顺序并列。各图片出处保存在备注中 |
 | video | 实验轨迹对照、设备操作或产品演示 | file 为本地 MP4，poster 为同画幅的代表帧，alt 说明画面，source 记录出处。可用 caption 提示观众应观察的事件。PPTX 内嵌片段，PDF 可从静态帧读图 |
-| chart | 数值对比、趋势 | dataset、columns；可设 rows、reading、axis_title、min/max、decimals（0–6）。kind 选 column 或 line，最多 8 个类别、3 个系列 |
+| chart | 数值对比、趋势 | dataset、columns；可设 rows、reading、axis_title、min/max、decimals（0–6）。kind 选 column、bar 或 line，最多 8 个类别、3 个系列 |
 | table | 结果对照、里程碑、逐项验收 | dataset、columns；可设 rows、widths（含行键列）、highlight（行键），或 highlight_where（按所示列的 column、equals 匹配状态）。每页最多 9 行数据、6 列 |
 | equation | 可编辑公式与符号解释 | latex 为不含美元定界符的单行表达式，另需 explanation、source。通过 Pandoc 生成 Office Math，附同一公式的透明位图用于兼容预览 |
 | decision | 总结、局限、待决事项 | takeaway；items 为 1–3 条行动或问题 |
@@ -48,6 +49,10 @@
 | spotlight | 结尾的关键区间、资源或决策 | value 和 label 放在色块中，heading 和 text 说明含义、责任人或下一步 |
 
 封面可以用分栏构图。学术图版在 cover 页增加 `plate`，含 file、alt、caption、source。PDF 图版另需 pdf_page 和 crop。指标封面使用 `metrics`，传入 2–3 组 label 和 value，可在 value 中绑定 `{{fact}}`。图版、指标组和单位 stationery 各有独立构图。表格可用 caption 点出最重要的一行。
+
+统计图要同时解释设备或观察条件时，可在 `chart` 添加 `illustration`，含 file、alt、source、caption，也支持从 PDF 裁图。实验图在左，原生图表在右，reading 位于两者下方。`kind: "bar"` 画横向条形，类别从上到下跟随所选数据行。比较多个条件各自的照片与数值时，继续使用 `condition_comparison`，可加 `summary: {"value": "{{rate}}", "label": "总体成功率"}`，总数或比例应来自对应数据记录。
+
+连续观测的每个 frame 可另写 `time`，例如 `"time": "03′12″", "label": "样品离开夹具"`。时刻显示在图片上方，事件说明紧跟图片下边缘。普通顺序图仍可只写 label。
 
 `figure`、`video` 和 `chart` 可设 `"caption_position": "below"`。图或视频保持原始比例，在整行内居中，下方留一行给 `caption`。图表横跨正文区，轴标签和图例用 17 pt，数据标签用 18 pt，下方显示 `reading`。一句话放不下时，把实验细节移入备注。省略此字段或设为 `"side"` 时，沿用侧栏说明。
 

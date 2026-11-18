@@ -60,7 +60,7 @@ python research-deck/scripts/deck.py check docs/decks/iris.pptx --spec out/iris-
 
 [![文献组会、会议短讲、答辩、推进会、验收、项目演示的真实渲染页](docs/media/modes.png)](docs/gallery.md)
 
-六种汇报模式分别编排问题、证据和收束方式，八种通用视觉风格可以自由搭配，另外提供六种院校场合专用风格。内置起稿提供完整中文案例，鸢尾花短讲提供英文案例。
+六种汇报模式分别编排问题、证据和收束方式，九种通用视觉风格可以自由搭配，另外提供六种院校场合专用风格。内置起稿提供完整中文案例，鸢尾花短讲提供英文案例。
 
 ```sh
 python research-deck/scripts/deck.py starter acceptance review-work --style review

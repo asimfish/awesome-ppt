@@ -1,4 +1,5 @@
 {
+  "plates":{"name":"研究图版","treatment":"plates","paper":"FFFFFF","ink":"172C46","muted":"435674","accent":"255A98","panel":"EDF3F8","line":"C6D2DE","hero":"1D3856","onhero":"FFFFFF","dark":false},
   "evidence":{"name":"结论与证据","treatment":"rule","paper":"FFFFFF","ink":"152C39","muted":"435F6D","accent":"006F68","panel":"E9F4F1","line":"B4CFCA","hero":"123B3A","onhero":"FFFFFF","dark":false},
   "editorial":{"name":"论文精读","treatment":"folio","paper":"FAF7EF","ink":"302821","muted":"635950","accent":"9D432D","panel":"F2E9DD","line":"CCBBAA","hero":"EEE5D6","onhero":"302821","dark":false},
   "seminar":{"name":"学术讲堂","treatment":"band","paper":"F9FBFC","ink":"152D43","muted":"405D70","accent":"176E95","panel":"E8F1F5","line":"B8CBD5","hero":"132E46","onhero":"FFFFFF","dark":false},
