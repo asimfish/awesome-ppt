@@ -290,6 +290,37 @@ def check(source, preview, spec=None, directory=None, style=None):
     return report
 
 
+def compare_layouts(original, revision, pairs, dest):
+    """Compare the actual projection of corresponding pages at equal frame sizes."""
+    with fitz.open(original) as left, fitz.open(revision) as right, fitz.open() as result:
+        for pair in pairs:
+            values = pair.split(":")
+            if len(values) != 2 or not all(v.isascii() and v.isdigit() for v in values):
+                raise ValueError(f"页码对应须写成 原页:新页，例如 3:5，收到 {pair}")
+            before, after = map(int, values)
+            if not (1 <= before <= len(left) and 1 <= after <= len(right)):
+                raise ValueError(f"对应页 {pair} 超出范围：原稿 {len(left)} 页，新稿 {len(right)} 页")
+            frame_width = 720
+            frame_height = max(
+                frame_width * doc[num - 1].rect.height / doc[num - 1].rect.width
+                for doc, num in ((left, before), (right, after))
+            )
+            page = result.new_page(width=1500, height=frame_height + 78)
+            for x, doc, number, label in (
+                (20, left, before, "原版"),
+                (760, right, after, "修订版"),
+            ):
+                page.insert_text(
+                    (x, 32), f"{label}  /  第 {number} 页", fontname="china-s",
+                    fontsize=17, color=(0.12, 0.20, 0.23),
+                )
+                frame = fitz.Rect(x, 56, x + frame_width, 56 + frame_height)
+                if doc[number - 1].get_contents():
+                    page.show_pdf_page(frame, doc, number - 1)
+                page.draw_rect(frame, color=(0.75, 0.79, 0.79), width=0.5)
+        result.save(dest, garbage=4, deflate=True)
+
+
 def overview(preview, dest, slide_numbers, findings):
     """Six vector slide previews per page, retaining the source aspect ratios."""
     flagged = {entry["slide"] for entry in findings}

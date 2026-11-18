@@ -43,6 +43,28 @@ class DeckChecks(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
         return draft, json.loads((draft / "deck.json").read_text())
 
+    def test_layout_compare_uses_selected_pages_and_preserves_output_on_error(self):
+        left, right, output = [self.work / name for name in ("old.pdf", "new.pdf", "pair.pdf")]
+        for path, prefix, width in [(left, "old", 960), (right, "new", 720)]:
+            with fitz.open() as doc:
+                for i in range(1, 3):
+                    pg = doc.new_page(width=width, height=540)
+                    pg.insert_text((40, 80), f"{prefix}-{i}")
+                doc.save(path)
+        run = self.cli("compare", left, right, output, "--pairs", "2:1", "1:2")
+        self.assertEqual(run.returncode, 0, run.stderr)
+        with fitz.open(output) as comparison:
+            self.assertEqual(len(comparison), 2)
+            for i, pair in enumerate([("old-2", "new-1"), ("old-1", "new-2")]):
+                left_box = comparison[i].search_for(pair[0])[0]
+                right_box = comparison[i].search_for(pair[1])[0]
+                self.assertLess(left_box.x1, right_box.x0)
+        saved = output.read_bytes()
+        for pair in ("0:1", "1:3", "1-1"):
+            failed = self.cli("compare", left, right, output, "--pairs", pair, "--replace")
+            self.assertNotEqual(failed.returncode, 0)
+            self.assertEqual(output.read_bytes(), saved)
+
     def test_video_draft_embeds_both_assets(self):
         src, spec = self.start("conference")
         frame = src / "frame.png"

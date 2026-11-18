@@ -209,6 +209,12 @@ def main():
     )
     inspect = sub.add_parser("inspect", help="读取 PPTX 页序、对象 ID 与文本")
     inspect.add_argument("input", type=Path)
+    compare = sub.add_parser("compare", help="将承担同一讲解任务的原版和新版 PDF 页并排")
+    compare.add_argument("original", type=Path)
+    compare.add_argument("revision", type=Path)
+    compare.add_argument("output", type=Path)
+    compare.add_argument("--pairs", nargs="+", required=True, metavar="原页:新页")
+    compare.add_argument("--replace", action="store_true")
     check = sub.add_parser("check", help="核对成稿、源数据和投影文字，报告需目检的页码")
     check.add_argument("input", type=Path)
     check.add_argument("--spec", type=Path, help="用于生成该 PPTX 的逐页稿")
@@ -252,14 +258,27 @@ def main():
     if args.action == "inspect":
         print(json.dumps(inventory(args.input), ensure_ascii=False, indent=2))
         return
-    if args.action == "check":
-        from checks import check, overview
+    if args.action in ("check", "compare"):
         from pdf_api import fitz
 
-        # Screen annotations in video slides can emit MuPDF diagnostics during
-        # text extraction. Keep stdout reserved for the machine-readable report.
+        # A video poster can have an unsupported PDF screen annotation.
+        # Send diagnostics to stderr so callers can consume the report or path.
         if hasattr(fitz, "set_messages"):
             fitz.set_messages(stream=sys.stderr)
+    if args.action == "compare":
+        from checks import compare_layouts
+
+        if args.output.suffix.lower() != ".pdf":
+            cli.error("compare 需要 .pdf 输出路径")
+        publish(
+            args.output,
+            args.replace,
+            lambda path: compare_layouts(args.original, args.revision, args.pairs, path),
+            [args.original, args.revision],
+        )
+        return
+    if args.action == "check":
+        from checks import check, overview
 
         if args.style and not args.spec:
             cli.error("--style 需要与 --spec 一起使用")
