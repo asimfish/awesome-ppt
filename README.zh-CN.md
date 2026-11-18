@@ -1,0 +1,51 @@
+# CiteSlide · 引页
+
+[![CiteSlide 与鸢尾花样稿的真实结果页](docs/media/citeslide.png)](docs/decks/iris.pdf)
+
+[English](README.md) · **简体中文**　|　[查看样稿](docs/decks/iris.pdf) · [模板图册](docs/gallery.md) · [Skill 入口](research-deck/SKILL.md) · [持续集成](https://github.com/asimfish/citeslide-skill/actions/workflows/verify.yml)
+
+CiteSlide 帮你把论文、实验数据和项目记录讲成一份可编辑的 PowerPoint。向智能体说明听众、时间和材料，它会编排逐页主线，把定量结论绑定到具体数据行列，并写好讲者备注。PPTX 在本地生成。
+
+## 先打开一份真实样稿
+
+五页的鸢尾花短讲用 UCI 的 150 条测量记录回答一个问题：三种鸢尾花的花瓣长度有何差异？结果页上，Virginica 的平均花瓣长度为 **5.55 厘米**。图柱、标题和旁注读自同一份汇总表；翻到下一页，可以看到其中两个物种的实际取值范围仍有重叠。在 PowerPoint 中点选图表即可编辑数据。[可编辑 PPTX](docs/decks/iris.pptx) · [PDF 预览](docs/decks/iris.pdf) · [逐页稿](examples/iris/deck.json) · [原始数据与出处](examples/iris/SOURCE.md)
+
+## 在本机生成第一份 PPT
+
+在仓库根目录，使用 Python 3.9 或更高版本运行以下命令。
+
+```sh
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r research-deck/requirements.txt
+python research-deck/scripts/deck.py build examples/iris/deck.json out/iris.pptx
+```
+
+用 PowerPoint 打开 `out/iris.pptx`。如需导出 PDF，安装 LibreOffice 并让终端能找到 `soffice`，再运行 `python research-deck/scripts/deck.py preview out/iris.pptx out/iris.pdf`。原生公式页还需要 Pandoc。仓库提供的 PDF 可以直接阅读。
+
+## 交给智能体制作
+
+用支持项目级 skills 的智能体打开这个仓库，即可通过 `.agents/skills/research-deck` 使用本项目，也可以将 `research-deck/` 复制到智能体的技能目录。调用名为 `$research-deck`。
+
+> 用 $research-deck 把这篇论文做成 12 分钟中文组会 PPT。保留方法原图，主结果做成可编辑图表，写清原图表编号，最后留一页讨论局限，每页附讲者备注。
+
+做研制验收时，提交任务书和测试台账。模板按测试编号并列要求、实测值、记录位置和判定。若某行填写「达到」却明确缺少实测或记录，构建会指出对应编号；原始证据和阈值方向由评审人复核。
+
+## 按场合选择模式与风格
+
+[![文献组会、会议短讲、答辩、推进会、验收、项目演示的真实渲染页](docs/media/modes.png)](docs/gallery.md)
+
+六种汇报模式分别编排问题、证据和收束方式，六种视觉风格可以自由搭配。内置起稿提供完整中文案例，鸢尾花短讲提供英文案例。
+
+```sh
+python research-deck/scripts/deck.py starter acceptance review-work --style review
+python research-deck/scripts/deck.py build review-work/deck.json out/review.pptx
+```
+
+制作真实汇报时，一并替换模拟数据、逐页文字与备注。沿用单位既有 PPTX 时，可先读取对象 ID，再根据精确原文更新指定段落或表格单元格。[六套可编辑模板](docs/gallery.md) · [逐页稿格式与模板编辑](research-deck/references/spec.md)
+
+## 复算与参与维护
+
+`python examples/iris/summarize.py` 从固定版本的原始数据重建汇总表。`python research-deck/evals/test_deck.py` 验证数值绑定、验收记录、可编辑对象及既有模板修改。CI 另外重建首页样稿，核验投影页上的数值。[贡献指南](CONTRIBUTING.md) · [CI 工作流](.github/workflows/verify.yml)
+
+项目采用 GNU AGPL 第 3 版。UCI 鸢尾花数据按 CC BY 4.0 标注出处。[项目许可证](LICENSE) · [第三方材料说明](NOTICE.md)

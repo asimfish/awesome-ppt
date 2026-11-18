@@ -1,0 +1,24 @@
+name: Rendering or data issue / 渲染与数据问题
+description: Report a mismatch in a slide, its source or the projection.
+body:
+  - type: input
+    id: environment
+    attributes:
+      label: Mode, style and software versions
+      placeholder: conference / evidence / Python 3.12 / LibreOffice version
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: Expected and observed result
+      description: Which slide, figure, chart or source value is affected?
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Reproduction
+      description: Give a minimal shareable plan, dataset or command. Synthetic records work well.
+    validations:
+      required: true

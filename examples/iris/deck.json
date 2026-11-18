@@ -1,0 +1,128 @@
+{
+  "mode": "conference",
+  "style": "evidence",
+  "language": "en",
+  "title": "Petal length across three iris species",
+  "presenter": "CiteSlide",
+  "datasets": {
+    "iris": {
+      "file": "summary.csv",
+      "key": "Species",
+      "source": "R. Fisher · UCI Iris · petal length · DOI 10.24432/C56C76"
+    }
+  },
+  "facts": {
+    "virginica": {
+      "dataset": "iris",
+      "row": "Virginica",
+      "column": "Mean (cm)",
+      "decimals": 2,
+      "unit": " cm"
+    },
+    "gap": {
+      "dataset": "iris",
+      "row": "Virginica",
+      "minus_row": "Versicolor",
+      "column": "Mean (cm)",
+      "decimals": 2,
+      "unit": " cm"
+    },
+    "overlap_start": {
+      "dataset": "iris",
+      "row": "Virginica",
+      "column": "Minimum (cm)",
+      "decimals": 1,
+      "unit": " cm"
+    },
+    "overlap_end": {
+      "dataset": "iris",
+      "row": "Versicolor",
+      "column": "Maximum (cm)",
+      "decimals": 1,
+      "unit": " cm"
+    }
+  },
+  "slides": [
+    {
+      "layout": "cover",
+      "eyebrow": "BOTANICAL MEASUREMENTS",
+      "title": "Petal length across three iris species",
+      "subtitle": "A short talk using 150 observations from the UCI Iris dataset.",
+      "credit": "CiteSlide  /  Research example",
+      "notes": "Fisher, R. (1936). Iris [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C56C76. Dataset licensed CC BY 4.0. This deck uses the bezdekIris.data file and calculates descriptive summaries."
+    },
+    {
+      "layout": "process",
+      "section": "Method",
+      "title": "Each plant contributes one petal-length measurement",
+      "steps": [
+        {
+          "heading": "Read the records",
+          "text": "Use the petal length in centimetres from all 150 rows."
+        },
+        {
+          "heading": "Group by species",
+          "text": "Setosa, versicolor and virginica each contribute 50 plants."
+        },
+        {
+          "heading": "Compare summaries",
+          "text": "Calculate a mean for each group, then inspect its observed range."
+        }
+      ],
+      "source": "R. Fisher · UCI Iris · bezdekIris.data, columns 3 and 5",
+      "notes": "The input is a frozen copy of the file in the UCI archive. summarize.py uses decimal arithmetic and keeps three decimal places for the means."
+    },
+    {
+      "layout": "chart",
+      "section": "Results",
+      "title": "Virginica petals average {{virginica}}",
+      "dataset": "iris",
+      "columns": [
+        "Mean (cm)"
+      ],
+      "rows": [
+        "Setosa",
+        "Versicolor",
+        "Virginica"
+      ],
+      "kind": "column",
+      "min": 0,
+      "max": 7,
+      "decimals": 2,
+      "axis_title": "Mean petal length (cm)",
+      "reading": "{{gap}} longer on average than versicolor.",
+      "notes": "Each bar is the arithmetic mean for 50 observations. The title, labels and difference use the same three-decimal source table. Values on screen are rounded to two decimals."
+    },
+    {
+      "layout": "table",
+      "section": "Variation",
+      "title": "The observed ranges overlap for two species",
+      "dataset": "iris",
+      "columns": [
+        "Plants",
+        "Mean (cm)",
+        "Minimum (cm)",
+        "Maximum (cm)"
+      ],
+      "widths": [
+        1.5,
+        0.8,
+        1.1,
+        1.2,
+        1.2
+      ],
+      "notes": "Versicolor ranges from 3.0 to 5.1 cm and virginica from 4.5 to 6.9 cm. The intervals overlap even though the means differ."
+    },
+    {
+      "layout": "decision",
+      "section": "Interpretation",
+      "title": "Mean petal length summarizes differences between groups",
+      "takeaway": "Versicolor and virginica share part of the observed range.",
+      "items": [
+        "Their ranges overlap from {{overlap_start}} to {{overlap_end}}.",
+        "A classification study could add petal width and evaluate held-out plants."
+      ],
+      "notes": "The overlap refers to the intervals between the observed extrema. The classification study is a suggested next experiment."
+    }
+  ]
+}
