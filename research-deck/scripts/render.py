@@ -39,6 +39,8 @@ LAYOUTS = (
     "figure",
     "detail",
     "evidence_pair",
+    "sequence",
+    "bibliography",
     "condition_comparison",
     "video",
     "chart",
@@ -419,12 +421,16 @@ class Deck:
                     self.frame(page)
                     getattr(self, layout)(page)
                 notes = page.get("notes", "")
-                if page["citations"]:
+                sources = page["citations"] + [
+                    f"[{ref['number']}] {ref['byline']} · {ref['title']}\n{ref['url']}"
+                    for ref in page["references"]
+                ]
+                if sources:
                     notes += (
                         "\n\n"
                         + ("资料来源" if self.lang == "zh" else "Sources")
                         + "\n"
-                        + "\n".join(page["citations"])
+                        + "\n".join(sources)
                     )
                 self.slide.notes_slide.notes_text_frame.text = notes.strip()
             except (
@@ -658,6 +664,9 @@ class Deck:
             data_credit = self.sources.tables[p["dataset"]][0]["source"]
             note = "图件出处见备注" if self.lang == "zh" else "Image sources in notes"
             credit = f"{data_credit} · {note}"
+        if p["references"] and p["layout"] != "bibliography":
+            numbers = " ".join(f"[{ref['number']}]" for ref in p["references"])
+            credit = (numbers + "  " + credit).strip()
         self.txt(
             credit,
             self.x,
@@ -848,6 +857,34 @@ class Deck:
             image_contain(self.slide, buf, x, 2.58, w, 3.72 if p.get("caption") else 4.01, item["alt"])
         if p.get("caption"):
             self.txt(p["caption"], self.x, 6.34, self.w, 0.42, 22, 18)
+
+    def sequence(self, p):
+        frames = p["frames"]
+        gap = 0.18
+        width = (self.w - gap * (len(frames) - 1)) / len(frames)
+        for idx, frame in enumerate(frames):
+            x = self.x + idx * (width + gap)
+            asset = safe_figure(self.directory / frame["file"], frame)
+            image_contain(self.slide, asset, x, 1.93, width, 3.48, frame["alt"])
+            self.rect(x, 5.54, width, 0.025, "line")
+            self.txt(frame["label"], x, 5.65, width, 0.62, 22, 16, bold=True)
+        if p.get("caption"):
+            self.txt(p["caption"], self.x, 6.34, self.w, 0.43, 21, 17, "muted")
+
+    def bibliography(self, p):
+        refs = p["references"]
+        height = min(1.15, 4.75 / len(refs))
+        for idx, ref in enumerate(refs):
+            y = 1.92 + idx * height
+            width = self.w - 0.70
+            long_title = width_units(ref["title"]) * 22 > width * 72 * 0.96
+            title_height = height * (0.70 if long_title else 0.53)
+            self.txt(f"[{ref['number']}]", self.x, y, 0.62, 0.45, 19, 14, "accent", True)
+            title = self.txt(ref["title"], self.x + 0.70, y, width, title_height,
+                             22, 15, "ink", True, name="Reference title")
+            title.click_action.hyperlink.address = ref["url"]
+            self.txt(ref["byline"], self.x + 0.70, y + title_height, width,
+                     height - title_height - 0.02, 15, 11, "muted")
 
     def figure(self, p, movie=None):
         required(p, ["file", "alt", "source"])

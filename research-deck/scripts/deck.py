@@ -70,6 +70,10 @@ def page_asset_fields(page):
         for panel in page["conditions"].values():
             required(panel, ["file"])
             yield panel, "file"
+    if layout == "sequence" or (auto and "frames" in page):
+        for frame in page["frames"]:
+            required(frame, ["file"])
+            yield frame, "file"
     if "plate" in page:
         yield page["plate"], "file"
 
@@ -147,6 +151,8 @@ def storyboard(spec, directory, style=None):
             "page": index, "title": p["title"], "layout": p["layout"],
             "reason": p["layout_reason"], "sources": p["citations"], "files": files,
         }
+        if p["references"]:
+            page["references"] = p["references"]
         missing = [name for name in files if not (directory / name).is_file()]
         if missing:
             page["missing_files"] = missing

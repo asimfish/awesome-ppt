@@ -46,6 +46,53 @@ class DeckChecks(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
         return draft, json.loads((draft / "deck.json").read_text())
 
+    def test_observation_sequence_and_reading_links_survive_draft(self):
+        images = self.work / "images"
+        images.mkdir()
+        frames = []
+        for label, color in [("Start", "white"), ("End", "blue")]:
+            path = images / (label + ".png")
+            Image.new("RGB", (120, 80), color).save(path)
+            frames.append({"file": str(path), "alt": label, "label": label})
+        entry = {"byline": "Chen et al. · 2026", "title": "Flow measurements", "url": "https://example.org/flow"}
+        spec = {"mode": "journal-club", "bibliography": {"flow": entry}, "slides": [
+            {"title": "Flow changes", "source": "Fig. 1", "frames": frames, "cite": ["flow"]},
+            {"title": "Reading", "layout": "bibliography", "cite": ["flow"]}]}
+        draft = self.work / "draft"
+        original = self.work / "talk.json"
+        original.write_text(json.dumps(spec))
+        self.assertEqual(self.cli("draft", original, draft).returncode, 0)
+        shutil.rmtree(images)
+        spec = json.loads((draft / "deck.json").read_text())
+        deck = Deck(spec, draft)
+        self.assertEqual(deck.pages[0]["layout"], "sequence")
+        prs = deck.build()
+        notes = prs.slides[0].notes_slide.notes_text_frame.text
+        self.assertIn(entry["url"], notes)
+        self.assertIn("Fig. 1", notes)
+        if os.environ.get("AWESOMEPPT_RENDER_TESTS") == "1":
+            clean = self.work / "reading.pptx"
+            pdf = clean.with_suffix(".pdf")
+            prs.save(clean)
+            rendered = self.cli("preview", clean, pdf)
+            self.assertEqual(rendered.returncode, 0, rendered.stderr)
+            checked = self.cli("check", clean, "--spec", draft / "deck.json", "--pdf", pdf)
+            self.assertEqual(checked.returncode, 0, checked.stdout + checked.stderr)
+            self.assertTrue(json.loads(checked.stdout)["pdf_fonts"])
+        pictures = [s for s in prs.slides[0].shapes if s._element.xpath("./p:nvPicPr")]
+        pictures[0].left, pictures[1].left = pictures[1].left, pictures[0].left
+        link = next(s for s in prs.slides[1].shapes if s.name == "Reference title")
+        self.assertEqual(link.click_action.hyperlink.address, entry["url"])
+        link.click_action.hyperlink.address = "https://example.org/erratum"
+        output = self.work / "changed.pptx"
+        prs.save(output)
+        findings = []
+        compare_source(Deck(spec, draft), output, inventory(output), lambda *args: findings.append(args))
+        self.assertEqual({f[2] for f in findings}, {"source_picture", "source_link"})
+        spec["slides"][0]["cite"] = ["missing"]
+        with self.assertRaisesRegex(ValueError, "cite"):
+            Deck(spec, draft)
+
     def test_storyboard_routes_measured_conditions_and_detects_swapped_photos(self):
         source = self.work / "optics"
         source.mkdir()

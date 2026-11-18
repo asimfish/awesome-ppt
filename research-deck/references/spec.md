@@ -34,6 +34,8 @@
 | figure | 论文原图、系统界面、照片 | file、alt、source；可设 caption。PDF 图件须有 pdf_page（从 1 起）与 crop（左、上、右、下归一化坐标）。位图直接按比例置入 |
 | detail | 界面字段、仪器读数、方法图的局部 | file、alt、source、region、detail_label，可设 caption。region 是相对于已显示图幅的归一化左、上、右、下坐标。整图保留选区框，局部使用同一张图片的可编辑裁切。PDF 先按 pdf_page 和 crop 取图 |
 | evidence_pair | 同一实验的两个时点、条件或观测 | left、right 各含 heading、file、alt、source；每边可单独指定 PDF 页和裁切区域。两幅图在等宽区域内按原比例显示，可用 caption 写一句共同的观察结论 |
+| sequence | 按时间解读一次观测、操作或故障复现过程 | frames 为 2–4 个按时间排列的对象，各有 file、alt、label。source 可写在整页或逐帧填写；可选 caption。各图保留比例，标签独立可编辑 |
+| bibliography | 综述的延伸阅读、组会答疑 | cite 选 1–5 个文献键。每个题名可点击打开原始链接；可分多页，按书目登记顺序统一编号 |
 | condition_comparison | 每种观察条件各有原图和测量记录 | dataset、columns、conditions，可设 rows、caption。选择 2–4 个条件与 1–3 项指标，conditions 用精确 CSV 行键分别关联 file、alt、source。图片与原生表格按所选行的顺序并列。各图片出处保存在备注中 |
 | video | 实验轨迹对照、设备操作或产品演示 | file 为本地 MP4，poster 为同画幅的代表帧，alt 说明画面，source 记录出处。可用 caption 提示观众应观察的事件。PPTX 内嵌片段，PDF 可从静态帧读图 |
 | chart | 数值对比、趋势 | dataset、columns；可设 rows、reading、axis_title、min/max、decimals（0–6）。kind 选 column 或 line，最多 8 个类别、3 个系列 |
@@ -47,6 +49,10 @@
 封面可以用分栏构图。学术图版在 cover 页增加 `plate`，含 file、alt、caption、source。PDF 图版另需 pdf_page 和 crop。指标封面使用 `metrics`，传入 2–3 组 label 和 value，可在 value 中绑定 `{{fact}}`。图版、指标组和单位 stationery 各有独立构图。表格可用 caption 点出最重要的一行。
 
 `figure`、`video` 和 `chart` 可设 `"caption_position": "below"`。图或视频保持原始比例，在整行内居中，下方留一行给 `caption`。图表横跨正文区，轴标签和图例用 17 pt，数据标签用 18 pt，下方显示 `reading`。一句话放不下时，把实验细节移入备注。省略此字段或设为 `"side"` 时，沿用侧栏说明。
+
+### 逐页引用与文献页
+
+顶层可用 `bibliography` 登记可查阅的原始文献。例如 `{"method": {"title": "论文题名", "byline": "作者 · 期刊或预印本 · 版本日期", "url": "https://example.org/paper"}}`。内容页写 `"cite": ["method"]`，图件或数据的 `source` 继续写图表号、页码或实验记录位置。普通内容页显示书目编号，备注保存完整题名、作者及网址。文献页显式设定 `"layout": "bibliography"`，用同一组键选择阅读条目。
 
 ### 图表和文本共用一份数据
 
@@ -113,6 +119,7 @@ python3 scripts/deck.py check 成稿.pptx --spec 工作稿/deck.json --pdf 投�
 - `--spec` 按当前 CSV 和素材重建参考稿，对照逐页文字、备注、表格单元格、原生图表缓存，以及点图和方格图的数据标记。`figure`、`detail`、`evidence_pair` 与 `condition_comparison` 还核对实际图像内容、替代文本与裁切。对照图换位、局部框移位等可导致误读的变化会按页报告 `source_picture`。交接页中的责任方与产物错配会报告 `source_handoff`。原构建用过 `--style` 时，在核验中传入相同选项。
 - `--pdf` 选择交付时使用的 PDF；省略时用 LibreOffice 临时渲染。核对页数、画幅、可提取的文字和生成图表的数据标签。原生学校模板可直接核对 PPTX 与 PDF；隐藏页会按导出的页序映射。
 - JSON 的 `errors` 指向数据或投影不一致的页；`warnings` 指向疑似重叠、越界、字色与邻近背景相近或坐标轴截断的位置。已有模板中的隐藏文本、阴影与渐变会影响判读，请看原大小页面。扫描图里的文字、科研结论和来源本身需要人工核对。
+- 文献页会核对 PPTX 中题名对应的链接和 PDF 中导出的阅读链接。报告中的 `requested_fonts` 与 `pdf_fonts` 可用来追查字体替换。遇到中英文笔画或字重异常时，比较字体名称并打开对应页。
 - `--overview` 从实际 PDF 每六页排一张总览，带页级提示的缩略图标为 Review。命令输出 JSON。退出码 0 表示未发现硬性不一致，1 表示核验发现不一致，2 表示输入或运行失败。
 
 ### 高校工作稿

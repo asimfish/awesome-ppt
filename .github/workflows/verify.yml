@@ -38,4 +38,7 @@ jobs:
       - name: Project a deck selected from its evidence and compare it to its sources
         env:
           AWESOMEPPT_RENDER_TESTS: "1"
-        run: python research-deck/evals/test_deck.py DeckChecks.test_storyboard_routes_measured_conditions_and_detects_swapped_photos
+        run: >
+          python research-deck/evals/test_deck.py
+          DeckChecks.test_storyboard_routes_measured_conditions_and_detects_swapped_photos
+          DeckChecks.test_observation_sequence_and_reading_links_survive_draft

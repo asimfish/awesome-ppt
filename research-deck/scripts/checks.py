@@ -90,7 +90,7 @@ def projection_issues(page):
     raster = page.get_pixmap(
         matrix=fitz.Matrix(scale, scale), colorspace=fitz.csRGB, alpha=False, annots=False
     )
-    lines, faint = [], []
+    lines, faint, fonts = [], [], set()
     for block_id, block in enumerate(data["blocks"]):
         for line in block.get("lines", []):
             text = "".join(s["text"] for s in line["spans"])
@@ -98,6 +98,8 @@ def projection_issues(page):
             if abs(rect) and text.strip():
                 lines.append((block_id, rect, text))
             for span in line["spans"]:
+                if span["text"].strip():
+                    fonts.add(span["font"])
                 if len(compact(span["text"])) >= 2 and blends_into_background(
                     span, fitz.Rect(span["bbox"]) * page.rotation_matrix, raster, scale
                 ):
@@ -122,7 +124,7 @@ def projection_issues(page):
         issues.append(("text_outside_canvas", outside[:3]))
     if overlaps:
         issues.append(("possible_text_overlap", overlaps[:3]))
-    return lines, issues
+    return lines, issues, fonts
 
 
 def video_parts(package, part):
@@ -164,7 +166,7 @@ def evidence_pictures(package, part, layout, cache):
         crop = query(pic, "./p:blipFill/a:srcRect")
         bounds = tuple(int(crop[0].get(k, 0)) if crop else 0 for k in ("l", "t", "r", "b"))
         placement = ()
-        if layout in ("detail", "evidence_pair", "condition_comparison"):
+        if layout in ("detail", "evidence_pair", "condition_comparison", "sequence"):
             placement = tuple(tuple(sorted(el.attrib.items())) for el in query(pic, "./p:spPr/a:xfrm/*"))
         alt = tuple(query(pic, "./p:nvPicPr/p:cNvPr/@descr"))
         result[(cache[key], alt, bounds, placement)] += 1
@@ -191,6 +193,20 @@ def handoff_cells(package, part):
     ]
 
 
+def bibliography_links(package, part):
+    folder, filename = part.rsplit("/", 1)
+    rels = etree.fromstring(package.read(f"{folder}/_rels/{filename}.rels"))
+    urls = {r.get("Id"): r.get("Target") for r in rels
+            if r.get("TargetMode") == "External" and r.get("Type", "").endswith("/hyperlink")}
+    slide = etree.fromstring(package.read(part))
+    result = []
+    for shape in query(slide, './/p:sp[p:nvSpPr/p:cNvPr[@name="Reference title"]]'):
+        title = "".join(query(shape, ".//a:t/text()"))
+        links = query(shape, "./p:nvSpPr/p:cNvPr/a:hlinkClick/@r:id")
+        result.append((title, [urls.get(link) for link in links]))
+    return result
+
+
 def compare_source(reference, source, actual, record):
     buf = io.BytesIO()
     reference.build().save(buf)
@@ -205,9 +221,11 @@ def compare_source(reference, source, actual, record):
             ):
                 record("errors", i, "source_video", "内嵌视频或静态预览帧与工作稿不一致")
             layout = reference.pages[i - 1]["layout"]
+            if layout == "bibliography" and bibliography_links(expected_package, lhs) != bibliography_links(actual_package, rhs):
+                record("errors", i, "source_link", "文献标题或链接目标与逐页稿不一致")
             if layout == "handoff" and handoff_cells(expected_package, lhs) != handoff_cells(actual_package, rhs):
                 record("errors", i, "source_handoff", "责任方、操作与交付物的对应关系与逐页稿不一致")
-            if layout in ("figure", "detail", "evidence_pair", "condition_comparison"):
+            if layout in ("figure", "detail", "evidence_pair", "condition_comparison", "sequence"):
                 if evidence_pictures(expected_package, lhs, layout, expected_pixels) != evidence_pictures(
                     actual_package, rhs, layout, actual_pixels
                 ):
@@ -272,8 +290,10 @@ def check(source, preview, spec=None, directory=None, style=None):
         report[level].append({"slide": number, "code": code, "detail": detail})
 
     reference = None
+    projected_fonts = set()
     if spec is not None:
         reference = Deck(spec, directory, style)
+        report["requested_fonts"] = {"body": reference.face, "heading": reference.heading}
         compare_source(reference, source, actual, record)
     with ZipFile(source) as package:
         size = query(
@@ -317,7 +337,8 @@ def check(source, preview, spec=None, directory=None, style=None):
                         "pdf_aspect_ratio",
                         "PDF 画布比例与 PPTX 不匹配",
                     )
-                lines, issues = projection_issues(projected)
+                lines, issues, fonts = projection_issues(projected)
+                projected_fonts.update(fonts)
                 for code, examples in issues:
                     record("warnings", index + 1, code, examples)
                 visible_lines = [
@@ -338,6 +359,12 @@ def check(source, preview, spec=None, directory=None, style=None):
                     )
                 if reference and index < len(reference.pages):
                     slide = reference.pages[index]
+                    if slide["layout"] == "bibliography":
+                        expected_links = Counter(ref["url"] for ref in slide["references"])
+                        projected_links = Counter(link.get("uri") for link in projected.get_links())
+                        missing_links = list((expected_links - projected_links).elements())
+                        if missing_links:
+                            record("errors", index + 1, "pdf_reference_link_missing", missing_links)
                     if slide["layout"] == "chart":
                         clipped, absent = chart_findings(
                             reference, slide, projected, visible_lines
@@ -348,6 +375,7 @@ def check(source, preview, spec=None, directory=None, style=None):
                             )
                         if absent:
                             record("errors", index + 1, "pdf_chart_labels", absent)
+    report["pdf_fonts"] = sorted(projected_fonts)
     report["ok"] = not report["errors"]
     return report
 

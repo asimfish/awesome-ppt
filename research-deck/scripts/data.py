@@ -3,6 +3,7 @@
 import csv
 import re
 from decimal import Decimal, InvalidOperation
+from urllib.parse import urlsplit
 
 
 DATA_LAYOUTS = {"table", "chart", "dotplot", "unitgrid", "condition_comparison"}
@@ -33,6 +34,20 @@ def precision(value):
 class Sources:
     def __init__(self, spec, directory):
         self.mode = spec.get("mode")
+        self.references = {}
+        bibliography = spec.get("bibliography", {})
+        if not isinstance(bibliography, dict):
+            raise ValueError("bibliography 需要用文献键关联各条记录")
+        for index, (key, entry) in enumerate(bibliography.items(), 1):
+            if not isinstance(entry, dict):
+                raise ValueError(f"bibliography {key} 需要题名、署名和链接")
+            required(entry, ["title", "byline", "url"])
+            if any(not isinstance(entry[field], str) or not entry[field].strip() for field in ("title", "byline", "url")):
+                raise ValueError(f"bibliography {key} 的题名、署名和链接必须是非空文本")
+            url = urlsplit(entry["url"])
+            if url.scheme not in ("https", "http") or not url.hostname:
+                raise ValueError(f"bibliography {key} 需要完整的 HTTP(S) 文献链接")
+            self.references[key] = dict(entry, number=index)
         self.tables = {}
         self.facts = {}
         for name, item in spec.get("datasets", {}).items():
@@ -150,6 +165,7 @@ class Sources:
             (("plate", "metrics", "subtitle", "credit"), "cover", "封面信息或开场图版"),
             (("stages",), "handoff", "逐阶段列出责任方、操作与产物"),
             (("steps",), "process", "需要按顺序解释一组操作"),
+            (("frames",), "sequence", "按时间顺序解读连续观测"),
             (("lead", "points"), "argument", "判断及其支持理由"),
             (("latex",), "equation", "解释数学表达式"),
             (("takeaway", "items"), "decision", "结论及待讨论或执行事项"),
@@ -255,6 +271,16 @@ class Sources:
         if layout == "condition_comparison":
             _, records = self.condition_records(resolved)
             citations.extend(image["source"] for _, image in records)
+        if layout == "sequence":
+            frames = resolved.get("frames")
+            if not isinstance(frames, list) or not 2 <= len(frames) <= 4:
+                raise ValueError("frames 需要按时间排列的 2–4 幅观测图")
+            for frame in frames:
+                required(frame, ["file", "alt", "label"])
+                if not frame.get("source") and not resolved.get("source"):
+                    raise ValueError("连续观测图需要逐帧 source 或整页共同 source")
+                if frame.get("source"):
+                    citations.append(frame["source"])
         if resolved.get("plate"):
             required(resolved["plate"], ["source"])
             citations.append(resolved["plate"]["source"])
@@ -265,6 +291,12 @@ class Sources:
                 citations.append(panel["source"])
         if resolved.get("source"):
             citations.insert(0, resolved["source"])
+        keys = resolved.get("cite", [])
+        if not isinstance(keys, list) or any(not isinstance(k, str) or k not in self.references for k in keys):
+            raise ValueError("cite 需要 bibliography 中的文献键列表")
+        resolved["references"] = [self.references[k] for k in dict.fromkeys(keys)]
+        if layout == "bibliography" and not 1 <= len(resolved["references"]) <= 5:
+            raise ValueError("文献页需要用 cite 选择 1–5 项文献")
         resolved["citations"] = list(dict.fromkeys(citations))
         return resolved
 
