@@ -36,7 +36,10 @@ python research-deck/scripts/deck.py build examples/iris/deck.json out/iris.pptx
 
 ## 复用和核验成稿
 
+把材料编成逐页 JSON 后，先查看每页的选型和证据。可省略 `layout`，也可指定作者或学校要求的版式。实验照片与测量值可按 CSV 行键对齐，流程可按责任方、操作与交付物组织。鸢尾花示例的均值图使用自动选型，个体分布页指定点图。
+
 ```sh
+python research-deck/scripts/deck.py storyboard examples/iris/deck.json
 python research-deck/scripts/deck.py draft examples/iris/deck.json out/iris-work
 python research-deck/scripts/deck.py check docs/decks/iris.pptx --spec out/iris-work/deck.json --pdf docs/decks/iris.pdf --overview out/iris-overview.pdf
 ```

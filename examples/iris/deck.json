@@ -76,7 +76,7 @@
       "notes": "Follow the horizontal axis first. There are 50 plants in each row. The amount of stacking shows how frequently each recorded length occurs."
     },
     {
-      "layout": "chart",
+      "layout": "auto",
       "section": "Results",
       "title": "Virginica petals average {{virginica}}",
       "dataset": "iris",

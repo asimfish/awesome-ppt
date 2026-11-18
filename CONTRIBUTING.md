@@ -8,6 +8,8 @@ Include the mode and style, the Python and PowerPoint or LibreOffice versions, a
 
 ## Change a template or renderer
 
+When feedback comes from a project deck, identify the decision the skill got wrong. Reproduce it with a second subject and shareable inputs. A layout change can then exercise the same path a user takes through storyboard selection, draft copying, rendering and source verification. For an evidence comparison, test what happens when the input order changes or two figures are exchanged.
+
 The portable skill lives in `research-deck/`. Visual tokens live in `assets/styles.json`, narrative choices in `assets/modes.json`, and complete demo inputs in `assets/starters/`, all relative to that directory. The root `.gitignore` admits named distribution directories so that a mixed research workspace can be maintained safely. Place shareable examples under `examples/` and their rendered files in `docs/decks/`.
 
 Run the following from the repository root after installing the Python dependencies. The second command uses LibreOffice, Pandoc and Chinese fonts.

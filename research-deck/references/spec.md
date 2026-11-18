@@ -16,7 +16,13 @@
 }
 ```
 
-顶层必需 `mode` 和非空 `slides`；可设 `title`、`presenter`、`language`（zh/en）、`style`、`font`、`heading_font`、`datasets`、`facts`。英文稿请用英文重写内容，`language` 只切换系统标签与默认字体。每页必有 `layout` 与 `title`，可写 `section`、`notes` 和简短 `source`，详细定位放入备注。图表所用 CSV 的来源自动出现在页脚和备注。
+顶层必需 `mode` 和非空 `slides`。可设 `title`、`presenter`、`language`（zh/en）、`style`、`font`、`heading_font`、`datasets`、`facts`。英文稿请用英文重写内容，`language` 切换系统标签与默认字体。每页需要 `title`，可写 `section`、`notes` 和简短 `source`，详细定位放入备注。图表所用 CSV 的来源自动出现在页脚和备注。
+
+### 构建前查看选型
+
+运行 `python3 scripts/deck.py storyboard 工作稿/deck.json`，在终端查看报告模式、逐页标题、页型、选择理由、图片和所用数据行列。个体观测超过 12 行时列出总行数和前四个行键。未找到的图件列在对应页的 `missing_files`。该命令和 `build` 读取同一份工作稿。若已给定 `layout`，系统采用指定的页型；省略或设为 `auto` 时，系统根据已整理到页上的材料选择。
+
+例如同一份数值表在会议短讲中可自动排为图，在验收模式中可自动排为逐项核对表。若一页带有明确的坐标或图形要求，系统优先采用该表达。单张原图、带局部选区的截图和有代表帧的 MP4 分别对应 `figure`、`detail` 和 `video`。既有单张图片又有一份数据表时，先确定两者是否可以按条件绑定，或明确指定主讲页型。个体分布、同分母计数和独立章页分别用 `dotplot`、`unitgrid`、`section` 明示。幻灯片的论断和讲解顺序由作者或智能体根据原始材料确定。
 
 | 页型 | 适合的内容 | 必需字段和选项 |
 |---|---|---|
@@ -24,9 +30,11 @@
 | argument | 问题、判断及支持理由 | lead；points 为 1–4 条文字 |
 | contrast | 对比两种方案、贡献或条件 | left 与 right 各有 heading、text |
 | process | 方法、路线、操作步骤 | steps 为 2–4 组 heading、text |
+| handoff | 研制、实验或审查流程中的交接 | stages 为按讲解顺序排列的 2–4 组 owner、action、output，可设 caption 和 source。分别填写责任方、实际操作和交付物 |
 | figure | 论文原图、系统界面、照片 | file、alt、source；可设 caption。PDF 图件须有 pdf_page（从 1 起）与 crop（左、上、右、下归一化坐标）。位图直接按比例置入 |
 | detail | 界面字段、仪器读数、方法图的局部 | file、alt、source、region、detail_label，可设 caption。region 是相对于已显示图幅的归一化左、上、右、下坐标。整图保留选区框，局部使用同一张图片的可编辑裁切。PDF 先按 pdf_page 和 crop 取图 |
 | evidence_pair | 同一实验的两个时点、条件或观测 | left、right 各含 heading、file、alt、source；每边可单独指定 PDF 页和裁切区域。两幅图在等宽区域内按原比例显示，可用 caption 写一句共同的观察结论 |
+| condition_comparison | 每种观察条件各有原图和测量记录 | dataset、columns、conditions，可设 rows、caption。选择 2–4 个条件与 1–3 项指标，conditions 用精确 CSV 行键分别关联 file、alt、source。图片与原生表格按所选行的顺序并列。各图片出处保存在备注中 |
 | video | 实验轨迹对照、设备操作或产品演示 | file 为本地 MP4，poster 为同画幅的代表帧，alt 说明画面，source 记录出处。可用 caption 提示观众应观察的事件。PPTX 内嵌片段，PDF 可从静态帧读图 |
 | chart | 数值对比、趋势 | dataset、columns；可设 rows、reading、axis_title、min/max、decimals（0–6）。kind 选 column 或 line，最多 8 个类别、3 个系列 |
 | table | 结果对照、里程碑、逐项验收 | dataset、columns；可设 rows、widths（含行键列）、highlight（行键），或 highlight_where（按所示列的 column、equals 匹配状态）。每页最多 9 行数据、6 列 |
@@ -41,6 +49,21 @@
 `figure`、`video` 和 `chart` 可设 `"caption_position": "below"`。图或视频保持原始比例，在整行内居中，下方留一行给 `caption`。图表横跨正文区，轴标签和图例用 17 pt，数据标签用 18 pt，下方显示 `reading`。一句话放不下时，把实验细节移入备注。省略此字段或设为 `"side"` 时，沿用侧栏说明。
 
 ### 图表和文本共用一份数据
+
+例如工作台照片与测量台账按工况对应时，可以这样编写一页。交换 `rows` 中两个工况的顺序，图件和测量值会一起换位。
+
+```json
+{
+  "title": "比较两种工况下的传感器读数",
+  "dataset": "bench",
+  "rows": ["加装滤片", "无滤片"],
+  "columns": ["输出（mV）"],
+  "conditions": {
+    "无滤片": {"file": "reference.png", "alt": "光路内未放置滤片", "source": "实验照片 A"},
+    "加装滤片": {"file": "filter.png", "alt": "滤片装在样品架上", "source": "实验照片 B"}
+  }
+}
+```
 
 例如 `scores.csv` 的表头为 `方法,成功率（%）`，行键为 A 和 B，值分别为 45.0 和 52.2。以下字段放在逐页稿顶层。
 
@@ -87,7 +110,7 @@
 python3 scripts/deck.py check 成稿.pptx --spec 工作稿/deck.json --pdf 投影稿.pdf --overview 总览.pdf
 ```
 
-- `--spec` 按当前 CSV 和素材重建参考稿，对照逐页文字、备注、表格单元格、原生图表缓存，以及点图和方格图的数据标记。原构建用过 `--style` 时，在核验中传入相同选项。
+- `--spec` 按当前 CSV 和素材重建参考稿，对照逐页文字、备注、表格单元格、原生图表缓存，以及点图和方格图的数据标记。`figure`、`detail`、`evidence_pair` 与 `condition_comparison` 还核对实际图像内容、替代文本与裁切。对照图换位、局部框移位等可导致误读的变化会按页报告 `source_picture`。交接页中的责任方与产物错配会报告 `source_handoff`。原构建用过 `--style` 时，在核验中传入相同选项。
 - `--pdf` 选择交付时使用的 PDF；省略时用 LibreOffice 临时渲染。核对页数、画幅、可提取的文字和生成图表的数据标签。原生学校模板可直接核对 PPTX 与 PDF；隐藏页会按导出的页序映射。
 - JSON 的 `errors` 指向数据或投影不一致的页；`warnings` 指向疑似重叠、越界、字色与邻近背景相近或坐标轴截断的位置。已有模板中的隐藏文本、阴影与渐变会影响判读，请看原大小页面。扫描图里的文字、科研结论和来源本身需要人工核对。
 - `--overview` 从实际 PDF 每六页排一张总览，带页级提示的缩略图标为 Review。命令输出 JSON。退出码 0 表示未发现硬性不一致，1 表示核验发现不一致，2 表示输入或运行失败。

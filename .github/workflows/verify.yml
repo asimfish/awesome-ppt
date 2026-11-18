@@ -35,3 +35,7 @@ jobs:
       - run: python -m pip install -r research-deck/requirements.txt
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libreoffice-impress libreoffice-writer libreoffice-math fonts-opensymbol pandoc fonts-noto-cjk fonts-liberation
       - run: python .github/check_showcase.py
+      - name: Project a deck selected from its evidence and compare it to its sources
+        env:
+          AWESOMEPPT_RENDER_TESTS: "1"
+        run: python research-deck/evals/test_deck.py DeckChecks.test_storyboard_routes_measured_conditions_and_detects_swapped_photos

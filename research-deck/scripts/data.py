@@ -5,6 +5,9 @@ import re
 from decimal import Decimal, InvalidOperation
 
 
+DATA_LAYOUTS = {"table", "chart", "dotplot", "unitgrid", "condition_comparison"}
+
+
 def required(obj, keys):
     for key in keys:
         if key not in obj or obj[key] is None or obj[key] == "":
@@ -29,6 +32,7 @@ def precision(value):
 
 class Sources:
     def __init__(self, spec, directory):
+        self.mode = spec.get("mode")
         self.tables = {}
         self.facts = {}
         for name, item in spec.get("datasets", {}).items():
@@ -138,6 +142,88 @@ class Sources:
                         f"{name} / {key}：判定为 {row[fields[0]]}，但 {col} 缺少记录"
                     )
 
+    def choose_layout(self, page):
+        if page.get("layout") not in (None, "auto"):
+            return page["layout"], "沿用逐页稿指定的页型"
+        options = []
+        for fields, layout, reason in (
+            (("plate", "metrics", "subtitle", "credit"), "cover", "封面信息或开场图版"),
+            (("stages",), "handoff", "逐阶段列出责任方、操作与产物"),
+            (("steps",), "process", "需要按顺序解释一组操作"),
+            (("lead", "points"), "argument", "判断及其支持理由"),
+            (("latex",), "equation", "解释数学表达式"),
+            (("takeaway", "items"), "decision", "结论及待讨论或执行事项"),
+            (("value", "label"), "spotlight", "突出一个有含义的量或决定"),
+        ):
+            if any(field in page for field in fields):
+                options.append((layout, reason))
+        if "left" in page or "right" in page:
+            required(page, ["left", "right"])
+            panels = (page["left"], page["right"])
+            if any("file" in panel for panel in panels):
+                options.append(("evidence_pair", "同页比较两份原始图件"))
+            else:
+                options.append(("contrast", "对照两组文字说明"))
+        if any(field in page for field in ("file", "poster", "region")):
+            if "poster" in page or str(page.get("file", "")).lower().endswith(".mp4"):
+                options.append(("video", "操作回放及其代表帧"))
+            elif "region" in page:
+                options.append(("detail", "在完整图件上定位并放大选区"))
+            else:
+                options.append(("figure", "讲解一份原始图件"))
+        if "dataset" in page or "conditions" in page:
+            required(page, ["dataset", "columns"])
+            if "conditions" in page:
+                options.append(("condition_comparison", "按同一行键展示条件图与测量记录"))
+            else:
+                options.append(self.dataset_layout(page))
+        if len(options) == 1:
+            return options[0]
+        if options:
+            names = "、".join(layout for layout, _ in options)
+            raise ValueError(f"本页材料同时支持 {names}，请按讲解目的指定 layout 或拆页")
+        raise ValueError("本页缺少选型依据，请补入图件、数据或论述，或明确指定 layout")
+
+    def dataset_layout(self, page):
+        heads, rows = self.select(page)
+        table_hints = any(k in page for k in ("highlight", "highlight_where", "widths"))
+        chart_hints = any(k in page for k in ("kind", "reading", "axis_title"))
+        if table_hints and chart_hints:
+            raise ValueError("同页包含表格与图表的显示要求，请指定 layout 或拆页")
+        if chart_hints and (len(rows) > 8 or len(heads) > 4):
+            raise ValueError("图表的数据超出单页范围，请精选 rows 或 columns")
+        if table_hints:
+            reason = "逐项核对记录或指定行"
+        elif self.mode == "acceptance" and not chart_hints:
+            reason = "验收时按行核对指标及其记录"
+        elif len(rows) <= 8 and len(heads) <= 4:
+            try:
+                for row in rows:
+                    for value in row[1:]:
+                        number(value)
+            except ValueError:
+                if chart_hints:
+                    raise ValueError("图表所选列包含文字或缺测项，请核对指标或使用 table")
+                reason = "所选记录包含文字或缺测标记"
+            else:
+                return "chart", "在共同坐标下比较数值"
+        else:
+            reason = "按行呈现所选记录"
+        if len(rows) > 9 or len(heads) > 6:
+            raise ValueError("明细超出单页表格范围，请精选行列；展示个体分布时可指定 dotplot")
+        return "table", reason
+
+    def condition_records(self, page):
+        heads, rows = self.select(page)
+        images = page["conditions"]
+        if not isinstance(images, dict) or set(images) != {row[0] for row in rows}:
+            raise ValueError("conditions 的键必须逐一对应本页选中的 CSV 行键")
+        if not 2 <= len(rows) <= 4 or not 1 <= len(heads) - 1 <= 3:
+            raise ValueError("条件对照页可并列 2–4 个条件及 1–3 项指标，请按讲解目的选行列")
+        for image in images.values():
+            required(image, ["file", "alt", "source"])
+        return heads, [(row, images[row[0]]) for row in rows]
+
     def resolve(self, page):
         citations = []
 
@@ -162,12 +248,17 @@ class Sources:
             return obj
 
         resolved = walk(page)
-        if page["layout"] in ("table", "chart", "dotplot", "unitgrid"):
-            citations.append(self.tables[page["dataset"]][0]["source"])
+        layout, reason = self.choose_layout(resolved)
+        resolved["layout"], resolved["layout_reason"] = layout, reason
+        if layout in DATA_LAYOUTS:
+            citations.append(self.tables[resolved["dataset"]][0]["source"])
+        if layout == "condition_comparison":
+            _, records = self.condition_records(resolved)
+            citations.extend(image["source"] for _, image in records)
         if resolved.get("plate"):
             required(resolved["plate"], ["source"])
             citations.append(resolved["plate"]["source"])
-        if page["layout"] == "evidence_pair":
+        if layout == "evidence_pair":
             required(resolved, ["left", "right"])
             for panel in (resolved["left"], resolved["right"]):
                 required(panel, ["source"])

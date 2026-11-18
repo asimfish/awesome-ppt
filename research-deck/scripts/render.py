@@ -35,9 +35,11 @@ LAYOUTS = (
     "argument",
     "contrast",
     "process",
+    "handoff",
     "figure",
     "detail",
     "evidence_pair",
+    "condition_comparison",
     "video",
     "chart",
     "table",
@@ -329,7 +331,16 @@ class Deck:
                 "stationery 适用于 development / quarterly，可指定 cover、header_mark"
             )
         self.sources = Sources(spec, directory)
-        self.pages = [self.sources.resolve(p) for p in spec["slides"]]
+        self.pages = []
+        for i, page in enumerate(spec["slides"], 1):
+            try:
+                required(page, ["title"])
+                resolved = self.sources.resolve(page)
+                if resolved["layout"] not in LAYOUTS:
+                    raise ValueError(f"未知页型 {resolved['layout']}")
+                self.pages.append(resolved)
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError(f"第 {i} 页：{exc}") from exc
         if not self.pages:
             raise ValueError("至少需要一页")
         self.directory = directory
@@ -398,10 +409,7 @@ class Deck:
         for index, page in enumerate(self.pages, 1):
             self.index = index
             try:
-                required(page, ["layout", "title"])
                 layout = page["layout"]
-                if layout not in LAYOUTS:
-                    raise ValueError(f"未知页型 {layout}")
                 self.slide = self.prs.slides.add_slide(self.prs.slide_layouts[6])
                 self.slide.background.fill.solid()
                 self.slide.background.fill.fore_color.rgb = rgb(self.style["paper"])
@@ -645,8 +653,13 @@ class Deck:
                 self.x, 1.70, self.w, 0.026 if t != "register" else 0.047, "accent"
             )
         self.rect(self.x, 6.82, self.w, 0.012, "line")
+        credit = " · ".join(p["citations"])
+        if p["layout"] == "condition_comparison":
+            data_credit = self.sources.tables[p["dataset"]][0]["source"]
+            note = "图件出处见备注" if self.lang == "zh" else "Image sources in notes"
+            credit = f"{data_credit} · {note}"
         self.txt(
-            " · ".join(p["citations"]),
+            credit,
             self.x,
             6.91,
             self.w - 0.66,
@@ -764,6 +777,51 @@ class Deck:
             raise ValueError("video 需要本地 MP4 演示片段")
         self.figure(p, movie)
 
+    def handoff(self, p):
+        required(p, ["stages"])
+        stages = p["stages"]
+        if not isinstance(stages, list) or not 2 <= len(stages) <= 4:
+            raise ValueError("stages 需要 2–4 个阶段")
+        labels = ("责任方", "操作", "交付物") if self.lang == "zh" else ("Owner", "Action", "Output")
+        fields = ("owner", "action", "output")
+        widths = [self.w * fraction for fraction in (0.25, 0.39, 0.36)]
+        x = self.x
+        for label, w in zip(labels, widths):
+            self.txt(label, x, 1.93, w - 0.14, 0.44, 19, 16, "muted", True)
+            x += w
+        bottom = 6.02 if p.get("caption") else 6.53
+        h = (bottom - 2.55) / len(stages)
+        for i, stage in enumerate(stages):
+            required(stage, fields)
+            y = 2.55 + i * h
+            self.rect(self.x, y, self.w, 0.015, "line")
+            x = self.x
+            for field, w in zip(fields, widths):
+                self.txt(stage[field], x, y + 0.14, w - 0.20, h - 0.18,
+                         23 if field == "owner" else 21, 16,
+                         "accent" if field == "owner" else "ink", field == "owner",
+                         name=f"Handoff {i + 1} {field}")
+                x += w
+        if p.get("caption"):
+            self.txt(p["caption"], self.x, 6.14, self.w, 0.50, 22, 18)
+
+    def condition_comparison(self, p):
+        heads, records = self.sources.condition_records(p)
+        label_width = max(width_units(label) for label in heads) * 17 / (72 * 0.96) + 0.22
+        stub = min(self.w * 0.35, max(self.w * 0.19, label_width))
+        col = (self.w - stub) / len(records)
+        height = 0.66 * len(heads)
+        top = (6.20 if p.get("caption") else 6.56) - height
+        for i, (_, item) in enumerate(records):
+            buf = safe_figure(self.directory / item["file"], item)
+            image_contain(self.slide, buf, self.x + stub + i * col + 0.07, 1.89,
+                          col - 0.14, top - 2.02, item["alt"])
+        matrix = list(zip(heads, *(row for row, _ in records)))
+        self.draw_table(matrix[0], matrix[1:], [stub] + [col] * len(records),
+                        top, height, (), 21, 15, align_values=PP_ALIGN.CENTER)
+        if p.get("caption"):
+            self.txt(p["caption"], self.x, 6.30, self.w, 0.42, 22, 18)
+
     def detail(self, p):
         required(p, ["file", "alt", "source", "region", "detail_label"])
         buf = safe_figure(self.directory / p["file"], p)
@@ -825,9 +883,6 @@ class Deck:
             raise ValueError("widths 应与列数一致且均为正数")
         h = min(3.73 if p.get("caption") else 4.46, 0.60 * (len(rows) + 1))
         y = 2.04 + (4.46 - h) * 0.28
-        tab = self.slide.shapes.add_table(
-            len(rows) + 1, len(heads), I(self.x), I(y), I(self.w), I(h)
-        ).table
         highlights = set(p.get("highlight", []))
         if "highlight_where" in p:
             rule = p["highlight_where"]
@@ -838,6 +893,14 @@ class Deck:
             highlights.update(
                 row[0] for row in rows if row[col_index] == rule["equals"]
             )
+        self.draw_table(heads, rows, widths, y, h, highlights, 17, 10)
+        if p.get("caption"):
+            self.txt(p["caption"], self.x, 6.06, self.w, 0.54, 17, 12, "muted")
+
+    def draw_table(self, heads, rows, widths, y, h, highlights, preferred, minimum, align_values=None):
+        tab = self.slide.shapes.add_table(
+            len(rows) + 1, len(heads), I(self.x), I(y), I(self.w), I(h)
+        ).table
         for i, v in enumerate(widths):
             tab.columns[i].width = I(self.w * v / sum(widths))
         for i, row in enumerate([heads, *rows]):
@@ -856,15 +919,15 @@ class Deck:
                     str(value),
                     tab.columns[j].width / I(1) - 0.20,
                     h / (len(rows) + 1) - 0.06,
-                    17,
-                    10,
+                    preferred,
+                    minimum,
                 )
                 para = c.text_frame.paragraphs[0]
+                if j and align_values is not None:
+                    para.alignment = align_values
                 run = para.add_run()
                 run.text = str(value)
                 font(run, self.face, size, self.style[col], weight)
-        if p.get("caption"):
-            self.txt(p["caption"], self.x, 6.06, self.w, 0.54, 17, 12, "muted")
 
     def chart(self, p):
         heads, rows = self.sources.select(p)

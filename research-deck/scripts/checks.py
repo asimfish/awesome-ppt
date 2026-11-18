@@ -1,5 +1,6 @@
 """Compare editable content with a fresh build and inspect the projected pages."""
 
+import hashlib
 import io
 import json
 import unicodedata
@@ -8,6 +9,7 @@ from decimal import ROUND_HALF_UP, Decimal, localcontext
 from zipfile import ZipFile
 
 from lxml import etree
+from PIL import Image
 from native import inventory, ordered_parts, query, related_parts
 from pdf_api import fitz
 from render import Deck
@@ -138,11 +140,63 @@ def video_parts(package, part):
     return result
 
 
+def evidence_pictures(package, part, layout, cache):
+    """Compare pixels and source crop independently of PNG encoding and ZIP part names."""
+    slide = etree.fromstring(package.read(part))
+    links = related_parts(package, part)
+    result = Counter()
+    for pic in query(slide, "./p:cSld/p:spTree/p:pic"):
+        rid = query(pic, "./p:blipFill/a:blip/@r:embed")
+        target = links.get(rid[0]) if rid else None
+        key = target[1] if target else None
+        if key not in cache:
+            if key is None or key not in package.namelist():
+                cache[key] = None
+            else:
+                blob = package.read(key)
+                try:
+                    with Image.open(io.BytesIO(blob)) as image:
+                        pixels = image.convert("RGBA")
+                        cache[key] = (pixels.size, hashlib.sha256(pixels.tobytes()).digest())
+                except OSError:
+                    # A replacement can be a vector format without a Pillow decoder.
+                    cache[key] = ("encoded", hashlib.sha256(blob).digest())
+        crop = query(pic, "./p:blipFill/a:srcRect")
+        bounds = tuple(int(crop[0].get(k, 0)) if crop else 0 for k in ("l", "t", "r", "b"))
+        placement = ()
+        if layout in ("detail", "evidence_pair", "condition_comparison"):
+            placement = tuple(tuple(sorted(el.attrib.items())) for el in query(pic, "./p:spPr/a:xfrm/*"))
+        alt = tuple(query(pic, "./p:nvPicPr/p:cNvPr/@descr"))
+        result[(cache[key], alt, bounds, placement)] += 1
+    if layout == "detail":
+        for frame in query(slide, './p:cSld/p:spTree/p:sp[p:nvSpPr/p:cNvPr[@name="Detail region"]]'):
+            transform = query(frame, "./p:spPr/a:xfrm/*")
+            result[("frame", tuple(tuple(sorted(el.attrib.items())) for el in transform))] += 1
+    return result
+
+
+def handoff_cells(package, part):
+    slide = etree.fromstring(package.read(part))
+    cells = []
+    for shape in query(slide, './p:cSld/p:spTree/p:sp[starts-with(p:nvSpPr/p:cNvPr/@name,"Handoff ")]'):
+        position = query(shape, "./p:spPr/a:xfrm/a:off")[0]
+        value = "".join(query(shape, "./p:txBody/a:p/a:r/a:t/text()"))
+        cells.append((int(position.get("x")), int(position.get("y")), value))
+    cells.sort()
+    # Read the three columns top to bottom; small per-cell nudges preserve the association.
+    rows = max(1, (len(cells) + 2) // 3)
+    return [
+        tuple(v for _, _, v in sorted(cells[i:i + rows], key=lambda cell: cell[1]))
+        for i in range(0, len(cells), rows)
+    ]
+
+
 def compare_source(reference, source, actual, record):
     buf = io.BytesIO()
     reference.build().save(buf)
     expected = inventory(buf)
     with ZipFile(buf) as expected_package, ZipFile(source) as actual_package:
+        expected_pixels, actual_pixels = {}, {}
         for i, (lhs, rhs) in enumerate(
             zip(ordered_parts(expected_package), ordered_parts(actual_package)), 1
         ):
@@ -150,6 +204,14 @@ def compare_source(reference, source, actual, record):
                 video_parts(expected_package, lhs) != video_parts(actual_package, rhs)
             ):
                 record("errors", i, "source_video", "内嵌视频或静态预览帧与工作稿不一致")
+            layout = reference.pages[i - 1]["layout"]
+            if layout == "handoff" and handoff_cells(expected_package, lhs) != handoff_cells(actual_package, rhs):
+                record("errors", i, "source_handoff", "责任方、操作与交付物的对应关系与逐页稿不一致")
+            if layout in ("figure", "detail", "evidence_pair", "condition_comparison"):
+                if evidence_pictures(expected_package, lhs, layout, expected_pixels) != evidence_pictures(
+                    actual_package, rhs, layout, actual_pixels
+                ):
+                    record("errors", i, "source_picture", "图像内容、裁切区域或对照位置与逐页稿不一致")
             if reference.pages[i - 1]["layout"] in ("dotplot", "unitgrid") and (
                 data_marks(expected_package, lhs) != data_marks(actual_package, rhs)
             ):

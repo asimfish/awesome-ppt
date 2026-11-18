@@ -1,6 +1,8 @@
 """Exercise data binding, starter generation, editability and safe output boundaries."""
 
+import io
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -12,12 +14,13 @@ from zipfile import ZipFile
 from lxml import etree
 from PIL import Image
 from pptx import Presentation
+from pptx.oxml.ns import qn
 from pptx.util import Inches
 
 SKILL = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SKILL / "scripts"))
 from data import Sources
-from checks import video_parts
+from checks import compare_source, video_parts
 from native import fill, inventory, ordered_parts
 from pdf_api import fitz
 from render import Deck
@@ -42,6 +45,112 @@ class DeckChecks(unittest.TestCase):
         run = self.cli("starter", mode, draft)
         self.assertEqual(run.returncode, 0, run.stderr)
         return draft, json.loads((draft / "deck.json").read_text())
+
+    def test_storyboard_routes_measured_conditions_and_detects_swapped_photos(self):
+        source = self.work / "optics"
+        source.mkdir()
+        for key, color in [("clear", "white"), ("filter", "blue")]:
+            Image.new("RGB", (180, 100), color).save(source / (key + ".png"))
+        (source / "readings.csv").write_text("condition,signal (mV)\nclear,90.2\nfilter,53.1\n")
+        conditions = {
+            key: {"file": key + ".png", "alt": key + " optical setup", "source": "Lab photo " + key}
+            for key in ("clear", "filter")
+        }
+        spec = {
+            "mode": "conference", "language": "en",
+            "datasets": {"bench": {"file": "readings.csv", "key": "condition", "source": "Bench log 7"}},
+            "slides": [
+                {"title": "Optical bench", "subtitle": "Two observed conditions"},
+                {"title": "Sample preparation and readout", "source": "Run sheet 7",
+                 "stages": [{"owner": "Technician", "action": "Mount filter", "output": "Sample ID"},
+                            {"owner": "Operator", "action": "Measure signal", "output": "Logged reading"}]},
+                {"title": "Filter and clear reference", "dataset": "bench", "columns": ["signal (mV)"],
+                 "rows": ["filter", "clear"], "conditions": conditions},
+                {"title": "Signal under both conditions", "dataset": "bench", "columns": ["signal (mV)"]},
+                {"layout": "table", "title": "Backup measurements", "dataset": "bench", "columns": ["signal (mV)"]},
+            ],
+        }
+        path = source / "talk.json"
+        path.write_text(json.dumps(spec))
+        draft = self.work / "portable"
+        self.assertEqual(self.cli("draft", path, draft).returncode, 0)
+        shutil.rmtree(source)
+        path = draft / "deck.json"
+        result = self.cli("storyboard", path)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        pages = json.loads(result.stdout)["slides"]
+        self.assertEqual([p["layout"] for p in pages], ["cover", "handoff", "condition_comparison", "chart", "table"])
+        self.assertEqual(pages[2]["rows"], ["filter", "clear"])
+        self.assertEqual(pages[2]["files"], ["filter.png", "clear.png"])
+        self.assertEqual(pages[2]["sources"], ["Bench log 7", "Lab photo filter", "Lab photo clear"])
+        self.assertNotIn("missing_files", pages[2])
+        output = self.work / "optics.pptx"
+        result = self.cli("build", path, output)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        if os.environ.get("AWESOMEPPT_RENDER_TESTS") == "1":
+            pdf = output.with_suffix(".pdf")
+            projected = self.cli("preview", output, pdf)
+            self.assertEqual(projected.returncode, 0, projected.stderr)
+            checked = self.cli("check", output, "--spec", path, "--pdf", pdf)
+            self.assertEqual(checked.returncode, 0, checked.stdout + checked.stderr)
+            self.assertEqual(json.loads(checked.stdout)["warnings"], [])
+        prs = Presentation(output)
+        page = prs.slides[2]
+        table = next(shape.table for shape in page.shapes if shape.has_table)
+        self.assertEqual([[c.text for c in row.cells] for row in table.rows],
+                         [["condition", "filter", "clear"], ["signal (mV)", "53.1", "90.2"]])
+        pictures = sorted((s for s in page.shapes if s._element.xpath("./p:nvPicPr")), key=lambda s: s.left)
+        with Image.open(io.BytesIO(pictures[0].image.blob)) as first:
+            self.assertEqual(first.convert("RGB").getpixel((0, 0)), (0, 0, 255))
+        blips = [s._element.xpath("./p:blipFill/a:blip")[0] for s in pictures]
+        ids = [b.get(qn("r:embed")) for b in blips]
+        for blip, rid in zip(blips, reversed(ids)):
+            blip.set(qn("r:embed"), rid)
+        owners = [s for s in prs.slides[1].shapes if s.name.startswith("Handoff ") and s.name.endswith(" owner")]
+        owners[0].top, owners[1].top = owners[1].top, owners[0].top
+        swapped = self.work / "swapped.pptx"
+        prs.save(swapped)
+        findings = []
+        copied = json.loads(path.read_text())
+        compare_source(Deck(copied, draft), swapped, inventory(swapped), lambda *args: findings.append(args))
+        self.assertEqual([(row[1], row[2]) for row in findings], [(2, "source_handoff"), (3, "source_picture")])
+        copied["slides"][2].pop("rows")
+        path.write_text(json.dumps(copied))
+        readout = draft / "readings.csv"
+        header, first_row, second_row = readout.read_text().splitlines()
+        for records, expected in [([first_row, second_row], ["clear", "filter"]),
+                                  ([second_row, first_row], ["filter", "clear"])]:
+            readout.write_text("\n".join([header, *records]) + "\n")
+            planned = json.loads(self.cli("storyboard", path).stdout)["slides"][2]
+            self.assertEqual(planned["rows"], expected)
+            self.assertEqual(planned["files"], [key + ".png" for key in expected])
+        del copied["slides"][2]["conditions"]["clear"]
+        path.write_text(json.dumps(copied))
+        before = output.read_bytes()
+        failed = self.cli("build", path, output, "--replace")
+        self.assertNotEqual(failed.returncode, 0)
+        self.assertIn("第 3 页", failed.stderr)
+        self.assertEqual(before, output.read_bytes())
+
+    def test_storyboard_guides_ambiguous_pages_and_respects_the_audience(self):
+        draft, spec = self.start("conference")
+        chart = next(p for p in spec["slides"] if p["layout"] == "chart")
+        page = {k: chart[k] for k in ("title", "dataset", "columns")}
+        path = draft / "deck.json"
+        for mode, layout in [("conference", "chart"), ("acceptance", "table")]:
+            spec.update(mode=mode, slides=[page])
+            path.write_text(json.dumps(spec))
+            self.assertEqual(json.loads(self.cli("storyboard", path).stdout)["slides"][0]["layout"], layout)
+        page.update(file="field.png", alt="Field", source="Log", layout="auto")
+        path.write_text(json.dumps(spec))
+        failure = self.cli("storyboard", path)
+        self.assertNotEqual(failure.returncode, 0)
+        self.assertIn("第 1 页", failure.stderr)
+        page["layout"] = "figure"
+        path.write_text(json.dumps(spec))
+        planned = json.loads(self.cli("storyboard", path).stdout)["slides"][0]
+        self.assertEqual(planned["layout"], "figure")
+        self.assertEqual(planned["missing_files"], ["field.png"])
 
     def test_layout_compare_uses_selected_pages_and_preserves_output_on_error(self):
         left, right, output = [self.work / name for name in ("old.pdf", "new.pdf", "pair.pdf")]
@@ -138,10 +247,10 @@ class DeckChecks(unittest.TestCase):
         Image.new("RGB", (360, 160), "green").save(wide)
         Image.new("RGB", (100, 240), "blue").save(tall)
         spec["slides"] = [
-            {"layout": "detail", "title": "Locate the field", "file": wide.name,
+            {"title": "Locate the field", "file": wide.name,
              "alt": "Complete view", "source": "Trial A", "region": [0.25, 0.1, 0.75, 0.6],
              "detail_label": "Selected field"},
-            {"layout": "evidence_pair", "title": "Compare observations",
+            {"layout": "auto", "title": "Compare observations",
              "left": {"file": wide.name, "alt": "Overview", "heading": "First", "source": "Trial A"},
              "right": {"file": str(tall), "alt": "Second view", "heading": "Second", "source": "Trial B"}},
         ]
@@ -153,7 +262,8 @@ class DeckChecks(unittest.TestCase):
         output = self.work / "visual.pptx"
         result = self.cli("build", draft / "deck.json", output)
         self.assertEqual(result.returncode, 0, result.stderr)
-        zoom, pair = list(Presentation(output).slides)
+        prs = Presentation(output)
+        zoom, pair = list(prs.slides)
         whole, inset = [s for s in zoom.shapes if s._element.xpath("./p:nvPicPr")]
         self.assertEqual(whole.image.sha1, inset.image.sha1)
         self.assertEqual((inset.crop_left, inset.crop_top, inset.crop_right, inset.crop_bottom),
@@ -170,6 +280,13 @@ class DeckChecks(unittest.TestCase):
         self.assertIn("Trial A", pair.notes_slide.notes_text_frame.text)
         self.assertIn("Trial B", pair.notes_slide.notes_text_frame.text)
         copied = draft / "deck.json"
+        inset.crop_top += 0.1
+        drifted = self.work / "drifted-detail.pptx"
+        prs.save(drifted)
+        findings = []
+        compare_source(Deck(json.loads(copied.read_text()), draft), drifted, inventory(drifted),
+                       lambda *args: findings.append(args))
+        self.assertEqual([(row[1], row[2]) for row in findings], [(1, "source_picture")])
         invalid = json.loads(copied.read_text())
         for rect in ([0, 0.5, 1, 0.5], [0, 0, 1.1, 1], [0, 1, 1], [0, 0, 1, 1]):
             invalid["slides"][0]["region"] = rect

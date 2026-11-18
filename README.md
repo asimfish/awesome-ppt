@@ -36,7 +36,10 @@ Open `out/iris.pptx` in PowerPoint. To make a PDF, install LibreOffice and put `
 
 ## Reuse and check a talk
 
+Inspect the storyboard before rendering. It shows the selected layout, sources and data rows for each slide. Omit `layout` to let the skill use the supplied evidence, or specify it to retain an author's design. Condition photographs can follow their CSV row keys, and workflow pages can show owners, actions and outputs. The iris example selects a chart for the means and explicitly requests a dot plot for individual observations.
+
 ```sh
+python research-deck/scripts/deck.py storyboard examples/iris/deck.json
 python research-deck/scripts/deck.py draft examples/iris/deck.json out/iris-work
 python research-deck/scripts/deck.py check docs/decks/iris.pptx --spec out/iris-work/deck.json --pdf docs/decks/iris.pdf --overview out/iris-overview.pdf
 ```

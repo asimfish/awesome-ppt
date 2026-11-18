@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from zipfile import BadZipFile
 
-from data import required
+from data import DATA_LAYOUTS, required
 from native import fill, inventory
 from render import ASSETS, LAYOUTS, MODES, STYLES, Deck
 
@@ -52,21 +52,33 @@ def write_json(path, data):
     )
 
 
+def page_asset_fields(page):
+    layout = page.get("layout")
+    auto = layout in (None, "auto")
+    if "file" in page:
+        yield page, "file"
+    if layout == "video" or (auto and "poster" in page):
+        yield page, "poster"
+    if layout == "evidence_pair" or (auto and any(
+        "file" in page.get(side, {}) for side in ("left", "right")
+    )):
+        required(page, ["left", "right"])
+        for panel in (page["left"], page["right"]):
+            required(panel, ["file"])
+            yield panel, "file"
+    if layout == "condition_comparison" or (auto and "conditions" in page):
+        for panel in page["conditions"].values():
+            required(panel, ["file"])
+            yield panel, "file"
+    if "plate" in page:
+        yield page["plate"], "file"
+
+
 def asset_fields(spec):
     for dataset in spec.get("datasets", {}).values():
         yield dataset, "file"
     for page in spec["slides"]:
-        if "file" in page:
-            yield page, "file"
-        if page.get("layout") == "video":
-            yield page, "poster"
-        if page.get("layout") == "evidence_pair":
-            required(page, ["left", "right"])
-            for panel in (page["left"], page["right"]):
-                required(panel, ["file"])
-                yield panel, "file"
-        if "plate" in page:
-            yield page["plate"], "file"
+        yield from page_asset_fields(page)
     stationery = spec.get("stationery", {})
     for key in stationery:
         yield stationery, key
@@ -118,6 +130,37 @@ def copy_draft(spec_path, dest, style=None, shared=None):
 def starter(mode, dest, style, library=None):
     shared = ASSETS / "starters"
     copy_draft((library or shared) / (mode + ".json"), dest, style, shared)
+
+
+def storyboard(spec, directory, style=None):
+    deck = Deck(spec, directory, style)
+    report = {
+        "mode": spec["mode"], "audience_question": deck.mode["question"],
+        "style": style or spec.get("style", deck.mode["style"]), "slides": [],
+    }
+    for index, p in enumerate(deck.pages, 1):
+        files = [obj[key] for obj, key in page_asset_fields(p)]
+        if p["layout"] == "condition_comparison":
+            _, records = deck.sources.condition_records(p)
+            files = [image["file"] for _, image in records]
+        page = {
+            "page": index, "title": p["title"], "layout": p["layout"],
+            "reason": p["layout_reason"], "sources": p["citations"], "files": files,
+        }
+        missing = [name for name in files if not (directory / name).is_file()]
+        if missing:
+            page["missing_files"] = missing
+        if p["layout"] in DATA_LAYOUTS:
+            heads, rows = deck.sources.select(p)
+            page["dataset"] = p["dataset"]
+            if len(rows) <= 12:
+                page["rows"] = [row[0] for row in rows]
+            else:
+                page["row_count"] = len(rows)
+                page["first_rows"] = [row[0] for row in rows[:4]]
+            page["columns"] = heads[1:]
+        report["slides"].append(page)
+    return report
 
 
 def campus(key, dest, template):
@@ -200,6 +243,9 @@ def main():
     cli = argparse.ArgumentParser(description=__doc__)
     sub = cli.add_subparsers(dest="action", required=True)
     sub.add_parser("catalog", help="列出模式、默认风格和页型")
+    story = sub.add_parser("storyboard", help="在构建前查看逐页选型、依据、数据行与素材")
+    story.add_argument("input", type=Path)
+    story.add_argument("--style", choices=STYLES)
     start = sub.add_parser("starter", help="从完整模式样稿创建独立工作目录")
     start.add_argument("mode", choices=MODES)
     start.add_argument("directory", type=Path)
@@ -238,6 +284,10 @@ def main():
         if name == "build":
             p.add_argument("--style", choices=STYLES)
     args = cli.parse_args()
+    if args.action == "storyboard":
+        report = storyboard(read_json(args.input), args.input.resolve().parent, args.style)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return
     if args.action == "campus":
         campus(args.institution, args.directory, args.template)
         return
