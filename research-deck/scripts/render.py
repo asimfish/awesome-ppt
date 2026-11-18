@@ -41,6 +41,7 @@ LAYOUTS = (
     "evidence_pair",
     "sequence",
     "bibliography",
+    "reading_guide",
     "condition_comparison",
     "video",
     "chart",
@@ -345,6 +346,9 @@ class Deck:
                 raise ValueError(f"第 {i} 页：{exc}") from exc
         if not self.pages:
             raise ValueError("至少需要一页")
+        for i, page in enumerate(self.pages, 1):
+            if page["layout"] == "reading_guide":
+                page["readings"] = self.reading_ranges(page.get("papers"), i)
         self.directory = directory
         self.lang = spec.get("language", "zh")
         if self.lang not in ("zh", "en"):
@@ -870,6 +874,37 @@ class Deck:
             self.txt(frame["label"], x, 5.65, width, 0.62, 22, 16, bold=True)
         if p.get("caption"):
             self.txt(p["caption"], self.x, 6.34, self.w, 0.43, 21, 17, "muted")
+
+    def reading_ranges(self, keys, guide_page):
+        if (not isinstance(keys, list) or not 1 <= len(keys) <= 5
+                or any(not isinstance(key, str) or key not in self.sources.references for key in keys)
+                or len(set(keys)) != len(keys)):
+            raise ValueError(f"第 {guide_page} 页：papers 需要 1–5 个不同的书目键")
+        readings = []
+        for key in keys:
+            indexes = [i for i, p in enumerate(self.pages, 1) if p.get("paper") == key]
+            if not indexes or indexes[-1] - indexes[0] + 1 != len(indexes):
+                raise ValueError(f"第 {guide_page} 页：{key} 需要一段连续的 paper 正文页，当前页次 {indexes}")
+            ref = self.sources.references[key]
+            readings.append({"paper": key, "label": ref.get("short_title", ref["title"]),
+                             "topic": self.pages[indexes[0] - 1]["title"],
+                             "first": indexes[0], "last": indexes[-1]})
+        return sorted(readings, key=lambda entry: entry["first"])
+
+    def reading_guide(self, p):
+        readings = p["readings"]
+        height = min(1.32, 4.78 / len(readings))
+        for i, entry in enumerate(readings):
+            y = 1.91 + i * height
+            first, last = entry["first"], entry["last"]
+            pages = str(first) if first == last else f"{first}–{last}"
+            self.rect(self.x, y, self.w, 0.015, "line")
+            self.txt(entry["label"], self.x, y + 0.08, self.w - 1.35, height * 0.45,
+                     23, 15, "ink", True)
+            self.txt(entry["topic"], self.x, y + height * 0.52, self.w - 1.35, height * 0.43,
+                     19, 14, "muted")
+            self.txt(pages, self.x + self.w - 1.18, y + 0.10, 1.18, 0.53, 21, 15,
+                     "accent", align=PP_ALIGN.RIGHT)
 
     def bibliography(self, p):
         refs = p["references"]

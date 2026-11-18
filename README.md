@@ -52,7 +52,7 @@ The repository includes a project-scoped skill at `.agents/skills/research-deck`
 
 > Use $research-deck to turn this paper into a 12-minute journal club talk. Keep the original method figure, bind the main result to an editable chart, and leave one slide for the strongest limitation. Add speaker notes and figure or table numbers.
 
-For an experimental sequence, place consecutive observations side by side and label the moment that changed the interpretation. Multi-paper talks can use numbered citations, full references in speaker notes, and a clickable reading list in both PPTX and PDF. [Slide specification](research-deck/references/spec.md)
+For an experimental sequence, place consecutive observations side by side and label the moment that changed the interpretation. For a paper-by-paper journal club, the reading guide follows the slide order and updates the page ranges when a paper gains or loses a slide. Numbered citations, speaker notes and the linked bibliography keep each result tied to its source. [Slide specification](research-deck/references/spec.md)
 
 For a project review, provide the requirements and the test ledger. The acceptance starter links each test ID to its requirement, measured value, evidence location and status. A passing row with a missing measurement or record is flagged during the build. The reviewer verifies the underlying record and threshold.
 

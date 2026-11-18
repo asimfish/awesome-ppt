@@ -46,6 +46,29 @@ class DeckChecks(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
         return draft, json.loads((draft / "deck.json").read_text())
 
+    def test_reading_guide_tracks_contiguous_papers_and_distinguishes_discussion(self):
+        refs = {k: {"title": f"Study {k}", "byline": "Chen et al.", "url": f"https://example.org/{k}"}
+                for k in ("a", "b")}
+        refs["a"]["short_title"] = "Study A"
+        def page(title, **extra):
+            return {"title": title, "lead": "Question", "points": ["Observation"], **extra}
+        spec = {"mode": "journal-club", "bibliography": refs, "slides": [
+            {"title": "Readings", "papers": ["b", "a"]},
+            page("Method A", paper="a"), page("Result A", paper="a", cite=["a", "b"]),
+            page("Method B", paper="b"), page("Discussion", cite=["a", "b"])]}
+        deck = Deck(spec, self.work)
+        guide = deck.pages[0]["readings"]
+        self.assertEqual([(r["label"], r["topic"], r["first"], r["last"]) for r in guide],
+                         [("Study A", "Method A", 2, 3), ("Study b", "Method B", 4, 4)])
+        self.assertEqual(deck.pages[1]["section"], "Study A")
+        self.assertEqual(len(deck.pages[2]["references"]), 2)
+        self.assertIn("2–3", [s.text for s in deck.build().slides[0].shapes if s.has_text_frame])
+        spec["slides"].insert(2, page("Extra result", paper="a"))
+        self.assertEqual(Deck(spec, self.work).pages[0]["readings"][1]["first"], 5)
+        spec["slides"].insert(3, page("Interlude"))
+        with self.assertRaisesRegex(ValueError, "a 需要一段连续"):
+            Deck(spec, self.work)
+
     def test_observation_sequence_and_reading_links_survive_draft(self):
         images = self.work / "images"
         images.mkdir()

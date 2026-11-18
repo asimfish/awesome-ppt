@@ -27,6 +27,7 @@
 | 页型 | 适合的内容 | 必需字段和选项 |
 |---|---|---|
 | cover、section | 报告开头、章节转场 | 可设 subtitle、eyebrow、credit |
+| reading_guide | 多篇文献组会的目录 | papers 填 1–5 个 bibliography 键。按正文顺序显示文献名、首张正文页的标题和实际页码范围 |
 | argument | 问题、判断及支持理由 | lead；points 为 1–4 条文字 |
 | contrast | 对比两种方案、贡献或条件 | left 与 right 各有 heading、text |
 | process | 方法、路线、操作步骤 | steps 为 2–4 组 heading、text |
@@ -51,6 +52,8 @@
 `figure`、`video` 和 `chart` 可设 `"caption_position": "below"`。图或视频保持原始比例，在整行内居中，下方留一行给 `caption`。图表横跨正文区，轴标签和图例用 17 pt，数据标签用 18 pt，下方显示 `reading`。一句话放不下时，把实验细节移入备注。省略此字段或设为 `"side"` 时，沿用侧栏说明。
 
 ### 逐页引用与文献页
+
+逐篇讲解时，每张属于该项工作的正文页写 `"paper": "method"`。它会引用对应文献，并默认以书目中的 `short_title` 或完整题名标出章节；可用 `section` 加上作者和年份。目录页写 `{"title": "本次选读", "papers": ["method", "benchmark"]}`。目录根据实际编排计算页次；同一篇正文被另一组页面隔开时，会指出文献键与涉及的页码。跨篇讨论、书目和附录可只写 `cite`，继续引用原文。仅使用 `cite` 的主题式讲稿仍可按议题组织。
 
 顶层可用 `bibliography` 登记可查阅的原始文献。例如 `{"method": {"title": "论文题名", "byline": "作者 · 期刊或预印本 · 版本日期", "url": "https://example.org/paper"}}`。内容页写 `"cite": ["method"]`，图件或数据的 `source` 继续写图表号、页码或实验记录位置。普通内容页显示书目编号，备注保存完整题名、作者及网址。文献页显式设定 `"layout": "bibliography"`，用同一组键选择阅读条目。
 

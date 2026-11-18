@@ -45,6 +45,8 @@ class Sources:
             if any(not isinstance(entry[field], str) or not entry[field].strip() for field in ("title", "byline", "url")):
                 raise ValueError(f"bibliography {key} 的题名、署名和链接必须是非空文本")
             url = urlsplit(entry["url"])
+            if "short_title" in entry and (not isinstance(entry["short_title"], str) or not entry["short_title"].strip()):
+                raise ValueError(f"bibliography {key} 的 short_title 必须是非空文本")
             if url.scheme not in ("https", "http") or not url.hostname:
                 raise ValueError(f"bibliography {key} 需要完整的 HTTP(S) 文献链接")
             self.references[key] = dict(entry, number=index)
@@ -166,6 +168,7 @@ class Sources:
             (("stages",), "handoff", "逐阶段列出责任方、操作与产物"),
             (("steps",), "process", "需要按顺序解释一组操作"),
             (("frames",), "sequence", "按时间顺序解读连续观测"),
+            (("papers",), "reading_guide", "列出选读文献及其在正文中的页次"),
             (("lead", "points"), "argument", "判断及其支持理由"),
             (("latex",), "equation", "解释数学表达式"),
             (("takeaway", "items"), "decision", "结论及待讨论或执行事项"),
@@ -294,6 +297,13 @@ class Sources:
         keys = resolved.get("cite", [])
         if not isinstance(keys, list) or any(not isinstance(k, str) or k not in self.references for k in keys):
             raise ValueError("cite 需要 bibliography 中的文献键列表")
+        if "paper" in resolved:
+            paper = resolved["paper"]
+            if not isinstance(paper, str) or paper not in self.references:
+                raise ValueError("paper 需要 bibliography 中的一个文献键")
+            keys = [paper, *keys]
+            ref = self.references[paper]
+            resolved.setdefault("section", ref.get("short_title", ref["title"]))
         resolved["references"] = [self.references[k] for k in dict.fromkeys(keys)]
         if layout == "bibliography" and not 1 <= len(resolved["references"]) <= 5:
             raise ValueError("文献页需要用 cite 选择 1–5 项文献")

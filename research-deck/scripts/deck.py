@@ -153,6 +153,10 @@ def storyboard(spec, directory, style=None):
         }
         if p["references"]:
             page["references"] = p["references"]
+        if "paper" in p:
+            page["paper"] = p["paper"]
+        if p["layout"] == "reading_guide":
+            page["readings"] = p["readings"]
         missing = [name for name in files if not (directory / name).is_file()]
         if missing:
             page["missing_files"] = missing
