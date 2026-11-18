@@ -21,7 +21,7 @@ python -m pip install -r research-deck/requirements.txt
 python research-deck/scripts/deck.py build examples/iris/deck.json out/iris.pptx
 ```
 
-用 PowerPoint 打开 `out/iris.pptx`。如需导出 PDF，安装 LibreOffice 并让终端能找到 `soffice`，再运行 `python research-deck/scripts/deck.py preview out/iris.pptx out/iris.pdf`。原生公式页还需要 Pandoc。仓库提供的 PDF 可以直接阅读。
+用 PowerPoint 打开 `out/iris.pptx`。如需导出 PDF，安装 LibreOffice 并让终端能找到 `soffice`，再运行 `python research-deck/scripts/deck.py preview out/iris.pptx out/iris.pdf`。原生公式页还需要 Pandoc 以及 LibreOffice 的 Writer 和 Math 组件。在精简的 Debian 或 Ubuntu 环境中，请安装 libreoffice-writer 和 libreoffice-math。仓库提供的 PDF 可以直接阅读。
 
 ## 交给智能体制作
 

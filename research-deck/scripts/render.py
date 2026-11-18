@@ -215,7 +215,7 @@ def attach_formula(slide, latex, x, y, w, h, color):
     mask = ImageOps.invert(Image.frombytes("L", (pix.width, pix.height), pix.samples))
     bounds = mask.getbbox()
     if not bounds:
-        raise ValueError("公式预览为空")
+        raise ValueError("公式预览为空，请核对表达式并检查 LibreOffice Writer 和 Math 组件")
     mask = mask.crop(bounds)
     bitmap = Image.new("RGBA", mask.size, "#" + color)
     bitmap.putalpha(mask)

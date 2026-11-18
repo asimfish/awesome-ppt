@@ -21,7 +21,7 @@ python -m pip install -r research-deck/requirements.txt
 python research-deck/scripts/deck.py build examples/iris/deck.json out/iris.pptx
 ```
 
-Open `out/iris.pptx` in PowerPoint. To make a PDF, install LibreOffice and put `soffice` on your PATH, then run `python research-deck/scripts/deck.py preview out/iris.pptx out/iris.pdf`. Equation slides additionally require Pandoc. The checked-in previews open without either tool.
+Open `out/iris.pptx` in PowerPoint. To make a PDF, install LibreOffice and put `soffice` on your PATH, then run `python research-deck/scripts/deck.py preview out/iris.pptx out/iris.pdf`. Equation slides additionally require Pandoc and the LibreOffice Writer and Math components. On minimal Debian or Ubuntu installations, install both libreoffice-writer and libreoffice-math. The checked-in previews open without either tool.
 
 ## Use it with an agent
 

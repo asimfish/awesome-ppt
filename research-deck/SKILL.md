@@ -28,7 +28,7 @@ python3 scripts/deck.py preview 工作稿/论文组会.pptx 工作稿/论文组�
 
 可在 `starter` 或 `build` 加 `--style evidence` 等风格名。起稿目录需为新目录。输出默认使用新文件名。`--replace` 用于更新自己生成的目标稿件。支持的页型、字段和示例见[逐页稿格式](references/spec.md)。
 
-首次使用需要可导入 `python-pptx`、`Pillow`、`lxml`、`PyMuPDF` 的 Python 3.9 或更高版本。缺失时在工作目录的虚拟环境中运行 `python -m pip install -r /实际路径/research-deck/requirements.txt`。PDF 预览需要可在 PATH 中找到的 LibreOffice `soffice`，原生公式还需要 `pandoc`。中文稿选本机已有的中文字体。
+首次使用需要可导入 `python-pptx`、`Pillow`、`lxml`、`PyMuPDF` 的 Python 3.9 或更高版本。缺失时在工作目录的虚拟环境中运行 `python -m pip install -r /实际路径/research-deck/requirements.txt`。PDF 预览需要可在 PATH 中找到的 LibreOffice `soffice`，原生公式还需要 `pandoc` 和 LibreOffice 的 Writer、Math 组件。Debian/Ubuntu 精简安装需包含 `libreoffice-writer` 和 `libreoffice-math`。中文稿选本机已有的中文字体。
 
 ## 沿用已有的 PPTX 模板
 
