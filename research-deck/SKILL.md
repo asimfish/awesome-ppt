@@ -30,6 +30,10 @@ python3 scripts/deck.py preview 工作稿/论文组会.pptx 工作稿/论文组�
 
 首次使用需要可导入 `python-pptx`、`Pillow`、`lxml`、`PyMuPDF` 的 Python 3.9 或更高版本。缺失时在工作目录的虚拟环境中运行 `python -m pip install -r /实际路径/research-deck/requirements.txt`。PDF 预览需要可在 PATH 中找到的 LibreOffice `soffice`，原生公式还需要 `pandoc` 和 LibreOffice 的 Writer、Math 组件。Debian/Ubuntu 精简安装需包含 `libreoffice-writer` 和 `libreoffice-math`。中文稿选本机已有的中文字体。
 
+## 高校与科研院校
+
+如果用户点名学校，先用 `python3 scripts/deck.py campus 学校ID` 核对机构层级、来源和可用起稿。上海交通大学研制总结用 `campus sjtu 新目录`，北京中关村学院季度答辩用 `campus bza 新目录`。从专用起稿生成时，照常调用 `build`；这些是 CiteSlide 的原创工作模板。若用户要求沿用校徽、母版和已有页序，优先用 `campus 学校ID 新目录 --template 校方文件.pptx` 导入原版。按 `objects.json` 填写 `edits.json` 后对工作副本调用 `fill`。学院工具需要身份认证时，使用用户持有的模板或参考稿。用户提供截图时，用它判断留白、层级和颜色，输出需编辑的布局与可追溯的图表。原生母版保真路线需要 PPTX 文件。[高校与院校使用指南](references/campuses.md)
+
 ## 沿用已有的 PPTX 模板
 
 先运行 `python3 scripts/deck.py inspect 原稿.pptx` 获取真实页序、对象 ID、段落、表格单元格、图表缓存系列与讲者备注。根据清单写编辑计划，再运行 `python3 scripts/deck.py fill 原稿.pptx edits.json 修订稿.pptx`。每次替换提供精确的原文 `expect`。此路线适合更新既有标题、段落和表格文字。改数据图表、增删章节或重排整份报告时，使用逐页稿重建所需内容。

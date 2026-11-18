@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from zipfile import BadZipFile
 
@@ -19,13 +20,11 @@ def read_json(path):
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
-def starter(mode, dest, style):
-    library = ASSETS / "starters"
-    spec = read_json(library / (mode + ".json"))
-    if style:
-        spec["style"] = style
-    files = {d["file"] for d in spec.get("datasets", {}).values()}
-    files.update(p["file"] for p in spec["slides"] if "file" in p)
+CAMPUSES = read_json(ASSETS / "campuses.json")
+
+
+@contextmanager
+def new_draft(dest):
     dest = dest.expanduser().absolute()
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists():
@@ -33,13 +32,55 @@ def starter(mode, dest, style):
     with tempfile.TemporaryDirectory(prefix=".starter-", dir=dest.parent) as tmp:
         draft = Path(tmp) / "draft"
         draft.mkdir()
-        for name in sorted(files):
-            shutil.copyfile(library / name, draft / name)
-        (draft / "deck.json").write_text(
-            json.dumps(spec, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-        )
+        yield draft
         draft.rename(dest)
+
+
+def write_json(path, data):
+    path.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+
+def starter(mode, dest, style, library=None):
+    shared = ASSETS / "starters"
+    library = library or shared
+    spec = read_json(library / (mode + ".json"))
+    if style:
+        spec["style"] = style
+    files = {d["file"] for d in spec.get("datasets", {}).values()}
+    files.update(p["file"] for p in spec["slides"] if "file" in p)
+    with new_draft(dest) as draft:
+        for name in sorted(files):
+            source = library / name
+            shutil.copyfile(source if source.is_file() else shared / name, draft / name)
+        write_json(draft / "deck.json", spec)
     print(dest / "deck.json")
+
+
+def campus(key, dest, template):
+    entry = CAMPUSES[key]
+    if dest is None:
+        if template is not None:
+            raise ValueError("--template 需要指定新工作目录")
+        print(json.dumps(entry, ensure_ascii=False, indent=2))
+        return
+    if template is None:
+        if "starter" not in entry:
+            raise ValueError(
+                f"请从校方获取 PPTX 后通过 --template 提供：{entry['url']}"
+            )
+        starter(entry["starter"], dest, None, ASSETS / "campuses")
+        return
+    if template.suffix.lower() != ".pptx":
+        raise ValueError(
+            "原生模板请提供 .pptx；.ppt 或 .potx 可在 PowerPoint 中另存为 .pptx"
+        )
+    with new_draft(dest) as draft:
+        shutil.copyfile(template, draft / "template.pptx")
+        write_json(draft / "objects.json", inventory(draft / "template.pptx"))
+        write_json(draft / "edits.json", {"edits": []})
+    print(dest / "template.pptx")
 
 
 def publish(dest, replace, fn, sources):
@@ -100,6 +141,12 @@ def main():
     start.add_argument("mode", choices=MODES)
     start.add_argument("directory", type=Path)
     start.add_argument("--style", choices=STYLES)
+    school = sub.add_parser("campus", help="查询高校来源、创建专用起稿或导入原生 PPTX")
+    school.add_argument("institution", choices=CAMPUSES)
+    school.add_argument("directory", nargs="?", type=Path)
+    school.add_argument(
+        "--template", type=Path, help="从持有的学校 PPTX 创建保留母版的工作副本"
+    )
     inspect = sub.add_parser("inspect", help="读取 PPTX 页序、对象 ID 与文本")
     inspect.add_argument("input", type=Path)
     for name in ("build", "fill", "preview"):
@@ -112,6 +159,9 @@ def main():
         if name == "build":
             p.add_argument("--style", choices=STYLES)
     args = cli.parse_args()
+    if args.action == "campus":
+        campus(args.institution, args.directory, args.template)
+        return
     if args.action == "starter":
         starter(args.mode, args.directory, args.style)
         return
@@ -122,6 +172,7 @@ def main():
                     "modes": MODES,
                     "styles": {k: v["name"] for k, v in STYLES.items()},
                     "layouts": LAYOUTS,
+                    "campuses": CAMPUSES,
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -140,6 +191,7 @@ def main():
         dirname = args.input.resolve().parent
         sources.extend(dirname / d["file"] for d in spec.get("datasets", {}).values())
         sources.extend(dirname / p["file"] for p in spec["slides"] if p.get("file"))
+        sources.extend(dirname / asset for asset in spec.get("stationery", {}).values())
         fn = lambda target: Deck(spec, dirname, args.style).build().save(target)
     elif args.action == "fill":
         sources.append(args.plan)

@@ -215,7 +215,9 @@ def attach_formula(slide, latex, x, y, w, h, color):
     mask = ImageOps.invert(Image.frombytes("L", (pix.width, pix.height), pix.samples))
     bounds = mask.getbbox()
     if not bounds:
-        raise ValueError("公式预览为空，请核对表达式并检查 LibreOffice Writer 和 Math 组件")
+        raise ValueError(
+            "公式预览为空，请核对表达式并检查 LibreOffice Writer 和 Math 组件"
+        )
     mask = mask.crop(bounds)
     bitmap = Image.new("RGBA", mask.size, "#" + color)
     bitmap.putalpha(mask)
@@ -270,6 +272,15 @@ class Deck:
         required(spec, ["mode", "slides"])
         self.mode = MODES[spec["mode"]]
         self.style = STYLES[style or spec.get("style", self.mode["style"])]
+        self.stationery = spec.get("stationery", {})
+        if self.stationery and (
+            not isinstance(self.stationery, dict)
+            or set(self.stationery) - {"cover", "header_mark"}
+            or self.style["treatment"] not in ("development", "quarterly")
+        ):
+            raise ValueError(
+                "stationery 适用于 development / quarterly，可指定 cover、header_mark"
+            )
         self.sources = Sources(spec, directory)
         self.pages = [self.sources.resolve(p) for p in spec["slides"]]
         if not self.pages:
@@ -396,6 +407,16 @@ class Deck:
             self.rect(0, 6.96, W, 0.12, "accent")
             title_y, sub_y = 1.54, 4.60
             sub_color = credit_color = "ink"
+        elif t == "development":
+            self.rect(0.73, 5.59, 1.12, 0.06, "onhero")
+            self.rect(12.62, 2.00, 0.022, 3.5, "line")
+            left, width, label_y, title_y, sub_y = 0.74, 11.1, 1.54, 2.43, 4.55
+        elif t == "quarterly":
+            self.rect(0, 0, W, H, "paper")
+            self.rect(0, 1.68, W, 2.76, "hero")
+            self.rect(left, 5.23, width, 0.02, "line")
+            label_y, title_y, sub_y, credit_y = 0.60, 2.10, 4.70, 6.18
+            label_color, sub_color, credit_color = "accent", "ink", "muted"
         else:
             self.rect(0, 0, W - 0.47, H, "paper")
             self.rect(left, 1.54, 1.35, 0.085, "accent")
@@ -405,6 +426,13 @@ class Deck:
                 "ink",
                 "muted",
             )
+        if "cover" in self.stationery:
+            asset = safe_figure(self.directory / self.stationery["cover"], {})
+            with Image.open(asset) as im:
+                if abs(im.width / im.height - W / H) > 0.02:
+                    raise ValueError("封面底图需要 16:9 宽屏比例")
+            asset.seek(0)
+            image_contain(self.slide, asset, 0, 0, W, H, "封面底图")
         label = (
             p.get("eyebrow")
             or p.get("section")
@@ -460,12 +488,20 @@ class Deck:
             self.rect(0, 0, W, 0.115, "hero")
         if t == "stage":
             self.rect(self.x, 0.31, 0.06, 0.22, "accent")
+        if t == "development":
+            self.rect(self.x - 0.20, 0.78, 0.09, 0.46, "accent")
+        if t == "quarterly":
+            self.rect(0, 1.71, W, 0.045, "hero")
+        if "header_mark" in self.stationery:
+            x = 8.55 if t == "quarterly" else 10.09
+            asset = safe_figure(self.directory / self.stationery["header_mark"], {})
+            image_contain(self.slide, asset, x, 0.07, W - x - 0.45, 0.60, "机构标识")
         head_color = "onhero" if t == "band" else "ink"
         self.txt(
             sec,
             self.x + (0.2 if t == "stage" else 0),
             0.28,
-            self.w,
+            self.w if "header_mark" not in self.stationery else 7.45,
             0.35,
             14,
             11,
@@ -560,11 +596,30 @@ class Deck:
         steps = p["steps"]
         if not isinstance(steps, list) or not 2 <= len(steps) <= 4:
             raise ValueError("steps 需要 2–4 项")
+        active = p.get("active_step")
+        if active is not None and (
+            type(active) is not int or not 1 <= active <= len(steps)
+        ):
+            raise ValueError("active_step 是从 1 开始的本页节点编号")
         w = (self.w - 0.36 * (len(steps) - 1)) / len(steps)
         self.rect(self.x, 2.55, self.w, 0.035, "line")
         for i, s in enumerate(steps):
             required(s, ["heading", "text"])
             x = self.x + i * (w + 0.36)
+            if active == i + 1:
+                self.rect(x - 0.08, 2.93, w + 0.06, 3.23, "panel")
+                self.rect(x, 6.20, w, 0.05, "accent")
+                self.txt(
+                    "本季节点" if self.lang == "zh" else "This quarter",
+                    x + 0.59,
+                    2.23,
+                    w - 0.62,
+                    0.44,
+                    17,
+                    12,
+                    "accent",
+                    True,
+                )
             self.rect(x, 2.30, 0.49, 0.48, "accent")
             text_box(
                 self.slide,

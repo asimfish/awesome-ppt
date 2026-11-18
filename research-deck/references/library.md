@@ -13,7 +13,7 @@
 | 研制总结与验收 | 哪些指标能签署，哪些证据还缺？ | 范围与交付物 → 研制阶段 → 环境与基线 → 条款、测试编号、实测、记录和判定 → 遗留项 | [acceptance](../assets/starters/acceptance.json) |
 | 项目路演与演示 | 谁用系统做什么？哪一步已实际跑通？ | 一次具体任务 → 使用路径 → 界面或现场证据 → 效果与下一次试用 | [demo](../assets/starters/demo.json) |
 
-## 六种视觉风格
+## 六种通用视觉风格
 
 | 风格 ID | 识别特征 | 合适的页面和取舍 |
 |---|---|---|
@@ -27,3 +27,5 @@
 风格和模式可交叉，例如 `starter acceptance 验收工作稿 --style defense`。替换风格后需要重看所选原图的背景、文字换行以及表格列宽。配色在 [styles.json](../assets/styles.json)，默认故事线在 [modes.json](../assets/modes.json)。
 
 外部学术样稿、模板和各自影响见[设计来源](../UPSTREAM.md)。
+
+研制总结与季度答辩另有两种场合专用风格 `development`、`quarterly`，以及九个机构的来源和导入入口。[高校模板库](campuses.md)

@@ -2,10 +2,35 @@
   "schema_version": 1,
   "skill": "research-deck",
   "activation_cases": [
-    {"id":"paper-talk","prompt":"给这篇论文做 12 分钟中文组会 PPT，保留原图和可编辑结果表。","should_activate":true},
-    {"id":"acceptance","prompt":"根据测试台账和研制总结，做一份项目验收汇报 PPTX。","should_activate":true},
-    {"id":"native-update","prompt":"沿用单位现有 PowerPoint 模板，更新表格和标题。","should_activate":true},
-    {"id":"peer-review","prompt":"帮我审读论文，写审稿意见。","should_activate":false},
-    {"id":"poster","prompt":"做成一张学术海报 PNG。","should_activate":false}
+    {
+      "id": "paper-talk",
+      "prompt": "给这篇论文做 12 分钟中文组会 PPT，保留原图和可编辑结果表。",
+      "should_activate": true
+    },
+    {
+      "id": "acceptance",
+      "prompt": "根据测试台账和研制总结，做一份项目验收汇报 PPTX。",
+      "should_activate": true
+    },
+    {
+      "id": "native-update",
+      "prompt": "沿用单位现有 PowerPoint 模板，更新表格和标题。",
+      "should_activate": true
+    },
+    {
+      "id": "peer-review",
+      "prompt": "帮我审读论文，写审稿意见。",
+      "should_activate": false
+    },
+    {
+      "id": "poster",
+      "prompt": "做成一张学术海报 PNG。",
+      "should_activate": false
+    },
+    {
+      "id": "campus-review",
+      "prompt": "用我的中关村学院季度答辩模板，保留学校母版，把这一季的台账变成 PPTX。",
+      "should_activate": true
+    }
   ]
 }

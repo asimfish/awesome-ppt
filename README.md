@@ -6,6 +6,14 @@
 
 CiteSlide turns research notes, papers and project records into editable PowerPoint talks. Give your agent a brief and your sources. It writes a slide plan, links quantitative claims to named rows and columns, and renders a deck with native charts, tables and speaker notes. The renderer runs locally.
 
+## Built to extend GPT-6.2 Astra’s slide workflow
+
+OpenAI’s release highlights how GPT-6.2 Astra designs slides and follows the layout, colors and typography of a supplied file or screenshot. CiteSlide brings reusable institutional templates, row-level data binding, native PowerPoint objects and rendered checks to that workflow. For a quarterly review, give Astra last quarter’s deck and this quarter’s records, then invoke `$research-deck` to preserve the roadmap and attach the evidence to each changed milestone. The renderer also works from a JSON plan with no model connection. [OpenAI release](https://openai.com/index/introducing-gpt-6-2-astra-sol/)
+
+## University templates
+
+Start with a nine-slide SJTU-style development review or a seven-slide Beijing Zhongguancun Academy-style quarterly defense. The institution catalog covers nine universities and academies, with official resource links and a local import path for your own PowerPoint masters. [Campus gallery and downloads](docs/campuses.md)
+
 ## Open a real talk
 
 In the five-slide Iris talk, the result slide says that virginica petals average **5.55 cm**. The bar, headline and notes refer to the same summary table. The next slide shows why group means alone cannot separate individual plants. Open the PPTX and select the chart to edit its data. [Editable talk](docs/decks/iris.pptx) · [PDF preview](docs/decks/iris.pdf) · [Slide plan](examples/iris/deck.json) · [Data and attribution](examples/iris/SOURCE.md)
@@ -35,7 +43,7 @@ For a project review, provide the requirements and the test ledger. The acceptan
 
 [![Six rendered slides showing the different modes and styles](docs/media/modes.png)](docs/gallery.md)
 
-Pick a mode for the audience's question and a style for the room. Six narrative modes and six visual styles can be combined. The Chinese starters are complete worked examples. The Iris talk is an English example.
+Pick a mode for the audience's question and a style for the room. Six narrative modes and six general visual styles can be combined. There are two additional campus treatments. The Chinese starters are complete worked examples. The Iris talk is an English example.
 
 ```sh
 python research-deck/scripts/deck.py starter acceptance review-work --style review

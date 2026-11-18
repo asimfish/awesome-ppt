@@ -37,6 +37,35 @@ class DeckChecks(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
         return draft, json.loads((draft / "deck.json").read_text())
 
+    def test_campus_preserves_native_master_or_uses_its_own_starter(self):
+        draft = self.work / "quarter"
+        self.assertEqual(self.cli("campus", "bza", draft).returncode, 0)
+        spec = json.loads((draft / "deck.json").read_text())
+        self.assertEqual(spec["slides"][1]["steps"], spec["slides"][2]["steps"])
+        self.assertEqual(spec["slides"][2]["active_step"], 2)
+        source = draft / "quarter.pptx"
+        Deck(spec, draft).build().save(source)
+        imported = self.work / "native"
+        self.assertEqual(
+            self.cli("campus", "tsinghua", imported, "--template", source).returncode, 0
+        )
+        self.assertEqual((imported / "template.pptx").read_bytes(), source.read_bytes())
+        self.assertEqual(
+            json.loads((imported / "objects.json").read_text()), inventory(source)
+        )
+        self.assertNotEqual(self.cli("campus", "bza", draft).returncode, 0)
+        fail = self.work / "invalid"
+        self.assertNotEqual(
+            self.cli(
+                "campus", "pku", fail, "--template", draft / "deck.json"
+            ).returncode,
+            0,
+        )
+        self.assertFalse(fail.exists())
+        spec["slides"][2]["active_step"] = 4
+        with self.assertRaisesRegex(ValueError, "active_step"):
+            Deck(spec, draft).build()
+
     def test_reordering_rows_preserves_named_facts_and_chart(self):
         draft, spec = self.start("conference")
         csv_path = draft / "results.csv"

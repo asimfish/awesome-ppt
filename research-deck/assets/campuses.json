@@ -1,0 +1,98 @@
+{
+  "sjtu": {
+    "name": "上海交通大学",
+    "en": "Shanghai Jiao Tong University",
+    "source": "校级视觉形象识别系统 · 通用 PPT",
+    "url": "https://vi.sjtu.edu.cn/index.php/articles/bulletin/13",
+    "starter": "sjtu-review",
+    "resources": [
+      {
+        "label": "校级通用模板 · 官方网盘",
+        "url": "https://pan.sjtu.edu.cn/web/share/414a4afd9278037454062dd08444303c"
+      },
+      {
+        "label": "生命学院办公素材页 · 2022 校级合集与院级模板",
+        "url": "https://life.sjtu.edu.cn/En/Data/View/7674"
+      }
+    ]
+  },
+  "bza": {
+    "name": "北京中关村学院",
+    "en": "Beijing Zhongguancun Academy",
+    "source": "学院官网 · 季度模板工具由学院经钉钉分发",
+    "url": "https://www.bza.edu.cn/",
+    "starter": "bza-quarterly"
+  },
+  "tsinghua": {
+    "name": "清华大学",
+    "en": "Tsinghua University",
+    "source": "学校文化建设办公室系列 · 通用、科技等主题",
+    "url": "https://www.env.tsinghua.edu.cn/info/1344/7931.htm",
+    "resources": [
+      {
+        "label": "2025 科技主题",
+        "url": "https://www.env.tsinghua.edu.cn/2025nianduyanshiwengaomoban5-kejizhuti.pptx"
+      }
+    ]
+  },
+  "pku": {
+    "name": "北京大学",
+    "en": "Peking University",
+    "source": "标识管理办公室 · PPT 模板压缩包",
+    "url": "https://vim.pku.edu.cn/xzzq/",
+    "resources": [
+      {
+        "label": "校方模板 ZIP",
+        "url": "https://vim.pku.edu.cn/docs/20240527144411870790.zip"
+      }
+    ]
+  },
+  "fudan": {
+    "name": "复旦大学",
+    "en": "Fudan University",
+    "source": "校内资料下载页 · 九款复旦模板",
+    "url": "https://simi.fudan.edu.cn/xxtd/list.htm",
+    "resources": [
+      {
+        "label": "模板 1",
+        "url": "https://simi.fudan.edu.cn/_upload/article/files/ec/6a/2afebadf4f1bb1575095030cc9bf/888bf5e1-8e0f-45f9-8ada-ac0532cdc246.pptx"
+      }
+    ]
+  },
+  "zju-ic": {
+    "name": "浙江大学集成电路学院",
+    "en": "Zhejiang University, College of Integrated Circuits",
+    "source": "院级模板 · 集成电路学院",
+    "url": "https://ic.zju.edu.cn/2025/0912/c81195a3080798/page.htm",
+    "resources": [
+      {
+        "label": "集成电路学院原版",
+        "url": "https://ic.zju.edu.cn/_upload/article/files/b7/30/be9580b04a2d907c035cd4f053ac/9b5581d8-41fa-47cd-9edb-97da8630ee90.pptx"
+      }
+    ]
+  },
+  "ustc": {
+    "name": "中国科学技术大学",
+    "en": "University of Science and Technology of China",
+    "source": "教务处 · 校徽、教务处标识及宽屏、标准尺寸",
+    "url": "https://www.teach.ustc.edu.cn/document/doc-misc/10319.html",
+    "resources": [
+      {
+        "label": "校徽版 001 · 16:9",
+        "url": "https://www.teach.ustc.edu.cn/document/doc-misc/10319.html/attachment/001_ustc_16x9-2"
+      }
+    ]
+  },
+  "iowa": {
+    "name": "爱荷华大学",
+    "en": "University of Iowa",
+    "source": "校方品牌手册 · Formal PowerPoint",
+    "url": "https://brand.uiowa.edu/powerpoint-templates"
+  },
+  "oslo": {
+    "name": "奥斯陆大学",
+    "en": "University of Oslo",
+    "source": "校方设计手册 · 校管设备中的演示母版",
+    "url": "https://www.uio.no/english/about/designmanual/profile-in-use/powerpoint/"
+  }
+}

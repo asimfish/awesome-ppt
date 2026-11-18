@@ -65,9 +65,18 @@ def main():
             assert inventory(outputs) == inventory(
                 ROOT / "docs/decks" / outputs.name
             ), spec.stem
-    print(
-        "Iris data, editable objects, projected labels and six starter decks verified."
-    )
+        for campus, name in (("sjtu", "sjtu-review"), ("bza", "bza-quarterly")):
+            draft = work / campus
+            run(cli, "campus", campus, draft)
+            output = draft / "talk.pptx"
+            run(cli, "build", draft / "deck.json", output)
+            assert inventory(output) == inventory(
+                ROOT / "docs/decks" / (name + ".pptx")
+            ), campus
+            run(cli, "preview", output, draft / "talk.pdf")
+            with fitz.open(draft / "talk.pdf") as pdf:
+                assert len(pdf) == len(inventory(output))
+    print("Iris, editable objects, six general starters and two campus decks verified.")
 
 
 if __name__ == "__main__":

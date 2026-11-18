@@ -76,31 +76,54 @@ def render(fonts):
     )
     hero.save(MEDIA / "citeslide.png", optimize=True)
 
+    render_grid(fonts, MODES, "modes.png")
+    render_grid(
+        fonts,
+        [
+            ("sjtu-review", "SJTU / Opening", 0),
+            ("sjtu-review", "Deliverables", 5),
+            ("sjtu-review", "Acceptance evidence", 7),
+            ("bza-quarterly", "BZA / Opening", 0),
+            ("bza-quarterly", "Quarterly roadmap", 2),
+            ("bza-quarterly", "Milestone review", 4),
+        ],
+        "campuses.png",
+    )
+
+
+def render_grid(fonts, entries, output_name):
+    cream, ink = "#F5F2E9", "#173A37"
     gallery = Image.new("RGB", (1536, 694), cream)
     draw = ImageDraw.Draw(gallery)
     with tempfile.TemporaryDirectory() as tmp:
-        for i, (mode, label, page) in enumerate(MODES):
+        for i, (mode, label, page) in enumerate(entries):
             pdf = Path(tmp) / (mode + ".pdf")
-            subprocess.run(
-                [
-                    sys.executable,
-                    str(ROOT / "research-deck/scripts/deck.py"),
-                    "preview",
-                    str(DECKS / (mode + ".pptx")),
-                    str(pdf),
-                ],
-                check=True,
-            )
+            if not pdf.exists():
+                subprocess.run(
+                    [
+                        sys.executable,
+                        str(ROOT / "research-deck/scripts/deck.py"),
+                        "preview",
+                        str(DECKS / (mode + ".pptx")),
+                        str(pdf),
+                    ],
+                    check=True,
+                )
             shot = slide_image(pdf, page, 472)
             x, y = 33 + i % 3 * 500, 20 + i // 3 * 336
-            draw.text((x, y), label, font=font("DejaVuSerif", 25), fill=ink)
+            draw.text(
+                (x, y),
+                label,
+                font=ImageFont.truetype(str(fonts / "DejaVuSerif.ttf"), 25),
+                fill=ink,
+            )
             gallery.paste(shot, (x, y + 44))
             draw.rectangle(
                 (x - 1, y + 43, x + shot.width, y + 44 + shot.height),
                 outline="#BCC7C0",
                 width=1,
             )
-    gallery.save(MEDIA / "modes.png", optimize=True)
+    gallery.save(MEDIA / output_name, optimize=True)
 
 
 if __name__ == "__main__":
