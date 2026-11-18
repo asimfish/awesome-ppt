@@ -1,11 +1,14 @@
 """Inspect and patch a native PPTX without round-tripping unrelated parts."""
 
 import posixpath
+import re
 from copy import copy
 from shutil import copyfileobj
 from zipfile import ZipFile
 
 from lxml import etree as E
+from pptx import Presentation
+from pptx.enum.text import PP_ALIGN
 
 P = "http://schemas.openxmlformats.org/presentationml/2006/main"
 A = "http://schemas.openxmlformats.org/drawingml/2006/main"
@@ -188,6 +191,90 @@ def patch_slide(root, edit):
         t.text = ""
 
 
+def add_text(root, edit, scratch, size):
+    from render import text_box
+
+    allowed = {
+        "op",
+        "slide",
+        "name",
+        "text",
+        "box",
+        "font",
+        "size",
+        "color",
+        "bold",
+        "align",
+    }
+    if set(edit) - allowed:
+        raise ValueError("add_text 包含未知字段")
+    name, text = edit.get("name"), edit.get("text")
+    if (
+        not isinstance(name, str)
+        or not name.strip()
+        or not isinstance(text, str)
+        or not text.strip()
+    ):
+        raise ValueError("add_text 需要对象名称 name 和非空 text")
+    objects = query(root, ".//p:cNvPr")
+    if any(obj.get("name") == name for obj in objects):
+        raise ValueError(f"第 {edit['slide']} 页已存在名为 {name} 的对象")
+    box = edit.get("box")
+    if (
+        not isinstance(box, list)
+        or len(box) != 4
+        or not all(type(v) in (int, float) and 0 <= v <= 1 for v in box)
+    ):
+        raise ValueError("box 需要四个归一化数值 [左, 上, 宽, 高]")
+    x, y, w, h = box
+    if w <= 0 or h <= 0 or x + w > 1 + 1e-12 or y + h > 1 + 1e-12:
+        raise ValueError("新增文本框必须完整位于幻灯片画布内")
+    font_size = edit.get("size", 24)
+    color = edit.get("color", "172E43")
+    face = edit.get("font", "Arial")
+    bold = edit.get("bold", False)
+    alignment = {
+        "left": PP_ALIGN.LEFT,
+        "center": PP_ALIGN.CENTER,
+        "right": PP_ALIGN.RIGHT,
+    }
+    if (
+        type(font_size) is not int
+        or not 1 <= font_size <= 400
+        or type(bold) is not bool
+    ):
+        raise ValueError("size 需要 1–400 的整数字号，bold 需要布尔值")
+    if not isinstance(color, str) or not re.fullmatch("[0-9a-fA-F]{6}", color):
+        raise ValueError("color 需要六位 RGB 十六进制值")
+    if (
+        not isinstance(face, str)
+        or not face.strip()
+        or edit.get("align", "left") not in alignment
+    ):
+        raise ValueError("font 需要字体名称，align 可选 left、center 或 right")
+    sw, sh = size
+    shape = text_box(
+        scratch,
+        text,
+        x * sw,
+        y * sh,
+        w * sw,
+        h * sh,
+        face,
+        color.upper(),
+        font_size,
+        bold=bold,
+        align=alignment[edit.get("align", "left")],
+        name=name,
+    )._element
+    shape.nvSpPr.cNvPr.set(
+        "id", str(max((int(obj.get("id")) for obj in objects), default=0) + 1)
+    )
+    tree = query(root, "./p:cSld/p:spTree")[0]
+    ext = query(tree, "./p:extLst")
+    tree.insert(tree.index(ext[0]) if ext else len(tree), shape)
+
+
 def fill(source, edits, dest):
     if not isinstance(edits, list) or not edits:
         raise ValueError("edits 需要非空数组")
@@ -195,7 +282,25 @@ def fill(source, edits, dest):
         parts = ordered_parts(z)
         changed = {}
         seen = set()
+        scratch = None
         for edit in edits:
+            n = edit["slide"]
+            if type(n) is not int or not 1 <= n <= len(parts):
+                raise ValueError(f"页码 {n} 无效")
+            part = parts[n - 1]
+            if part not in changed:
+                changed[part] = E.fromstring(z.read(part))
+            if edit.get("op") == "add_text":
+                if scratch is None:
+                    presentation = E.fromstring(z.read("ppt/presentation.xml"))
+                    dimensions = query(presentation, "./p:sldSz")[0]
+                    size = tuple(
+                        int(dimensions.get(attr)) / 914400 for attr in ("cx", "cy")
+                    )
+                    temp = Presentation()
+                    scratch = temp.slides.add_slide(temp.slide_layouts[6])
+                add_text(changed[part], edit, scratch, size)
+                continue
             if (
                 type(edit.get("id")) is not int
                 or type(edit.get("text")) is not str
@@ -204,16 +309,10 @@ def fill(source, edits, dest):
                 raise ValueError("编辑项需要整数 id 和字符串 expect、text")
             if set(edit) - {"slide", "id", "cell", "paragraph", "expect", "text"}:
                 raise ValueError("编辑项包含未知字段")
-            n = edit["slide"]
-            if type(n) is not int or not 1 <= n <= len(parts):
-                raise ValueError(f"页码 {n} 无效")
             key = (n, edit["id"], tuple(edit.get("cell", [])), edit.get("paragraph", 0))
             if key in seen:
                 raise ValueError(f"重复修改目标 {key}")
             seen.add(key)
-            part = parts[n - 1]
-            if part not in changed:
-                changed[part] = E.fromstring(z.read(part))
             patch_slide(changed[part], edit)
         with ZipFile(dest, "w") as out:
             out.comment = z.comment

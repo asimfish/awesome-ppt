@@ -51,20 +51,65 @@ def write_json(path, data):
     )
 
 
-def starter(mode, dest, style, library=None):
-    shared = ASSETS / "starters"
-    library = library or shared
-    spec = read_json(library / (mode + ".json"))
+def asset_fields(spec):
+    for dataset in spec.get("datasets", {}).values():
+        yield dataset, "file"
+    for page in spec["slides"]:
+        if "file" in page:
+            yield page, "file"
+        if "plate" in page:
+            yield page["plate"], "file"
+    stationery = spec.get("stationery", {})
+    for key in stationery:
+        yield stationery, key
+
+
+def copy_draft(spec_path, dest, style=None, shared=None):
+    spec = read_json(spec_path)
     if style:
         spec["style"] = style
-    files = {d["file"] for d in spec.get("datasets", {}).values()}
-    files.update(p["file"] for p in spec["slides"] if "file" in p)
+    root = spec_path.resolve().parent
+    refs = []
+    targets = {}
+    used = {"deck.json"}
+    for obj, key in asset_fields(spec):
+        name = Path(obj[key])
+        candidate = (root / name).resolve(strict=False)
+        if shared and not candidate.is_file():
+            candidate = (shared / name).resolve(strict=False)
+        if not candidate.is_file():
+            raise ValueError(f"工作稿素材不存在：{obj[key]}")
+        refs.append((obj, key, candidate))
+        for base in (root, shared):
+            if base and candidate.is_relative_to(base):
+                relative = candidate.relative_to(base)
+                folded = relative.as_posix().casefold()
+                if folded not in used and relative.parts[0].casefold() != "deck.json":
+                    targets[candidate] = relative
+                    used.add(folded)
+                break
+    top_level = {name.parts[0].casefold() for name in targets.values()}
+    import_dir = "_imported"
+    while import_dir in top_level:
+        import_dir += "_"
+    index = 0
+    for obj, key, source in refs:
+        if source not in targets:
+            index += 1
+            targets[source] = Path(import_dir, str(index), source.name)
+        obj[key] = targets[source].as_posix()
     with new_draft(dest) as draft:
-        for name in sorted(files):
-            source = library / name
-            shutil.copyfile(source if source.is_file() else shared / name, draft / name)
+        for source, name in targets.items():
+            target = draft / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, target)
         write_json(draft / "deck.json", spec)
     print(dest / "deck.json")
+
+
+def starter(mode, dest, style, library=None):
+    shared = ASSETS / "starters"
+    copy_draft((library or shared) / (mode + ".json"), dest, style, shared)
 
 
 def campus(key, dest, template):
@@ -92,7 +137,7 @@ def campus(key, dest, template):
     print(dest / "template.pptx")
 
 
-def publish(dest, replace, fn, sources):
+def publish(dest, replace, fn, sources, announce=True):
     dest = dest.expanduser().absolute()
     if dest.resolve() in {p.resolve() for p in sources}:
         raise ValueError("输出不能覆盖输入文件")
@@ -106,11 +151,12 @@ def publish(dest, replace, fn, sources):
             os.replace(ready, dest)
         else:
             os.link(ready, dest)
-    print(dest)
+    if announce:
+        print(dest)
 
 
 def preview(src, dest):
-    import fitz
+    from pdf_api import fitz
 
     cmd = shutil.which("soffice")
     if not cmd:
@@ -150,6 +196,9 @@ def main():
     start.add_argument("mode", choices=MODES)
     start.add_argument("directory", type=Path)
     start.add_argument("--style", choices=STYLES)
+    draft = sub.add_parser("draft", help="从已有逐页稿和引用的素材创建独立工作目录")
+    draft.add_argument("input", type=Path)
+    draft.add_argument("directory", type=Path)
     school = sub.add_parser("campus", help="查询高校来源、创建专用起稿或导入原生 PPTX")
     school.add_argument("institution", type=campus_key, metavar="学校简称、全称或ID")
     school.add_argument("directory", nargs="?", type=Path)
@@ -158,6 +207,13 @@ def main():
     )
     inspect = sub.add_parser("inspect", help="读取 PPTX 页序、对象 ID 与文本")
     inspect.add_argument("input", type=Path)
+    check = sub.add_parser("check", help="核对成稿、源数据和投影文字，报告需目检的页码")
+    check.add_argument("input", type=Path)
+    check.add_argument("--spec", type=Path, help="用于生成该 PPTX 的逐页稿")
+    check.add_argument("--pdf", type=Path, help="核对已有 PDF，省略时临时渲染当前 PPTX")
+    check.add_argument("--style", choices=STYLES, help="复现 build 的风格覆盖")
+    check.add_argument("--overview", type=Path, help="将实际投影页排成六页一览的 PDF")
+    check.add_argument("--replace", action="store_true", help="允许更新已有的概览 PDF")
     for name in ("build", "fill", "preview"):
         p = sub.add_parser(name)
         p.add_argument("input", type=Path)
@@ -173,6 +229,9 @@ def main():
         return
     if args.action == "starter":
         starter(args.mode, args.directory, args.style)
+        return
+    if args.action == "draft":
+        copy_draft(args.input, args.directory)
         return
     if args.action == "catalog":
         print(
@@ -191,6 +250,44 @@ def main():
     if args.action == "inspect":
         print(json.dumps(inventory(args.input), ensure_ascii=False, indent=2))
         return
+    if args.action == "check":
+        from checks import check, overview
+
+        if args.style and not args.spec:
+            cli.error("--style 需要与 --spec 一起使用")
+        if args.overview and args.overview.suffix.lower() != ".pdf":
+            cli.error("--overview 需要 .pdf 输出路径")
+        spec = read_json(args.spec) if args.spec else None
+        directory = args.spec.resolve().parent if args.spec else None
+        with tempfile.TemporaryDirectory() as scratch:
+            pdf = args.pdf or Path(scratch) / "preview.pdf"
+            if args.pdf is None:
+                preview(args.input, pdf)
+            result = check(args.input, pdf, spec, directory, args.style)
+            if args.overview:
+                inputs = [args.input, pdf]
+                if spec is not None:
+                    inputs.append(args.spec)
+                    inputs.extend(
+                        directory / obj[key] for obj, key in asset_fields(spec)
+                    )
+                publish(
+                    args.overview,
+                    args.replace,
+                    lambda target: overview(
+                        pdf,
+                        target,
+                        result["pdf_slides"],
+                        result["errors"] + result["warnings"],
+                    ),
+                    inputs,
+                    announce=False,
+                )
+                result["overview"] = str(args.overview.absolute())
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        if not result["ok"]:
+            sys.exit(1)
+        return
     ext = ".pdf" if args.action == "preview" else ".pptx"
     if args.output.suffix.lower() != ext:
         raise ValueError("输出文件扩展名应为 " + ext)
@@ -198,9 +295,7 @@ def main():
     if args.action == "build":
         spec = read_json(args.input)
         dirname = args.input.resolve().parent
-        sources.extend(dirname / d["file"] for d in spec.get("datasets", {}).values())
-        sources.extend(dirname / p["file"] for p in spec["slides"] if p.get("file"))
-        sources.extend(dirname / asset for asset in spec.get("stationery", {}).values())
+        sources.extend(dirname / obj[key] for obj, key in asset_fields(spec))
         fn = lambda target: Deck(spec, dirname, args.style).build().save(target)
     elif args.action == "fill":
         sources.append(args.plan)

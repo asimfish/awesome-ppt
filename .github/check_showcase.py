@@ -56,6 +56,7 @@ def verify_project(work, cli):
                 row["命中任务"]
             )
     run(cli, "preview", pptx, pdf)
+    run(cli, "check", pptx, "--spec", source / "deck.json", "--pdf", pdf)
     for path in (pdf, ROOT / "docs/decks" / pdf.name):
         with fitz.open(path) as document:
             assert len(document) == 5
@@ -103,6 +104,17 @@ def main():
         run(cli, "preview", result, work / "iris.pdf")
         verify_pdf(work / "iris.pdf")
         verify_pdf(ROOT / "docs/decks/iris.pdf")
+        run(
+            cli,
+            "check",
+            result,
+            "--spec",
+            iris / "deck.json",
+            "--pdf",
+            work / "iris.pdf",
+            "--overview",
+            work / "iris-overview.pdf",
+        )
         verify_project(work, cli)
         # Rebuild every advertised starter and compare its native contents to the shipped slide deck.
         for spec in sorted((SKILL / "assets/starters").glob("*.json")):
@@ -134,6 +146,15 @@ def main():
                 ROOT / "docs/decks" / (name + ".pptx")
             ), campus
             run(cli, "preview", output, draft / "talk.pdf")
+            run(
+                cli,
+                "check",
+                output,
+                "--spec",
+                draft / "deck.json",
+                "--pdf",
+                draft / "talk.pdf",
+            )
             with fitz.open(draft / "talk.pdf") as pdf:
                 assert len(pdf) == len(inventory(output))
                 shipped = ROOT / "docs/decks" / (name + ".pdf")

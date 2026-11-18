@@ -34,6 +34,15 @@ python research-deck/scripts/deck.py build examples/iris/deck.json out/iris.pptx
 
 Open `out/iris.pptx` in PowerPoint. To make a PDF, install LibreOffice and put `soffice` on your PATH, then run `python research-deck/scripts/deck.py preview out/iris.pptx out/iris.pdf`. Equation slides additionally require Pandoc and the LibreOffice Writer and Math components. On minimal Debian or Ubuntu installations, install both libreoffice-writer and libreoffice-math. The checked-in previews open without either tool.
 
+## Reuse and check a talk
+
+```sh
+python research-deck/scripts/deck.py draft examples/iris/deck.json out/iris-work
+python research-deck/scripts/deck.py check docs/decks/iris.pptx --spec out/iris-work/deck.json --pdf docs/decks/iris.pdf --overview out/iris-overview.pdf
+```
+
+The portable draft carries its CSVs, cover plate and figures. The check reports source discrepancies and highlights pages that need visual inspection. Native template edits can add an editable text box over a school master. [Iris slide overview](docs/decks/iris-overview.pdf) · [Editing and verification spec](research-deck/references/spec.md)
+
 ## Use it with an agent
 
 The repository includes a project-scoped skill at `.agents/skills/research-deck`. Open this checkout in an agent that supports project skills, or copy the `research-deck/` directory into your agent's skills folder. Invoke it as `$research-deck`.

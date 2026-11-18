@@ -1,6 +1,7 @@
 """Exercise data binding, starter generation, editability and safe output boundaries."""
 
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -9,11 +10,15 @@ from pathlib import Path
 from zipfile import ZipFile
 
 from lxml import etree
+from PIL import Image
+from pptx import Presentation
+from pptx.util import Inches
 
 SKILL = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SKILL / "scripts"))
 from data import Sources
 from native import fill, inventory, ordered_parts
+from pdf_api import fitz
 from render import Deck
 
 
@@ -36,6 +41,141 @@ class DeckChecks(unittest.TestCase):
         run = self.cli("starter", mode, draft)
         self.assertEqual(run.returncode, 0, run.stderr)
         return draft, json.loads((draft / "deck.json").read_text())
+
+    def test_portable_draft_carries_external_and_nested_assets(self):
+        src, spec = self.start("conference")
+        local = src / "art" / "plate.png"
+        local.parent.mkdir()
+        Image.new("RGB", (12, 20), "red").save(local)
+        external = self.work / "plate.png"
+        Image.new("RGB", (12, 20), "blue").save(external)
+        spec["slides"] = [
+            {
+                "layout": "cover",
+                "title": "Test",
+                "plate": {
+                    "file": "art/plate.png",
+                    "alt": "A",
+                    "caption": "Local",
+                    "source": "A",
+                },
+            },
+            {
+                "layout": "figure",
+                "title": "Other",
+                "file": "../plate.png",
+                "alt": "B",
+                "source": "B",
+            },
+            {
+                "layout": "figure",
+                "title": "Again",
+                "file": str(external),
+                "alt": "B",
+                "source": "B",
+            },
+        ]
+        source = src / "deck.json"
+        source.write_text(json.dumps(spec))
+        dest = self.work / "portable"
+        copied = self.cli("draft", source, dest)
+        self.assertEqual(copied.returncode, 0, copied.stderr)
+        draft = json.loads((dest / "deck.json").read_text())
+        self.assertEqual((dest / "art/plate.png").read_bytes(), local.read_bytes())
+        fig = draft["slides"][1]["file"]
+        self.assertEqual(fig, draft["slides"][2]["file"])
+        self.assertEqual((dest / fig).read_bytes(), external.read_bytes())
+        external.unlink()
+        self.assertNotEqual(
+            self.cli("draft", source, self.work / "broken").returncode, 0
+        )
+        self.assertFalse((self.work / "broken").exists())
+        shutil.rmtree(src)
+        built = self.cli("build", dest / "deck.json", dest / "portable.pptx")
+        self.assertEqual(built.returncode, 0, built.stderr)
+
+    def test_add_text_preserves_blank_native_slide_and_rejects_replay(self):
+        prs = Presentation()
+        prs.slide_width, prs.slide_height = Inches(10), Inches(7.5)
+        prs.slides.add_slide(prs.slide_layouts[6])
+        src, dest = self.work / "blank.pptx", self.work / "edited.pptx"
+        prs.save(src)
+        edit = {
+            "slide": 1,
+            "op": "add_text",
+            "name": "Research title",
+            "text": "Editable title",
+            "box": [0.1, 0.2, 0.8, 0.3],
+            "align": "center",
+            "bold": True,
+        }
+        fill(src, [edit], dest)
+        with ZipFile(src) as before, ZipFile(dest) as after:
+            self.assertEqual(before.namelist(), after.namelist())
+            self.assertEqual(
+                [p for p in before.namelist() if before.read(p) != after.read(p)],
+                [ordered_parts(before)[0]],
+            )
+        shape = Presentation(dest).slides[0].shapes[0]
+        self.assertEqual(
+            (shape.left, shape.top, shape.width, shape.height),
+            (Inches(1), Inches(1.5), Inches(8), Inches(2.25)),
+        )
+        self.assertEqual(shape.text, edit["text"])
+        with self.assertRaisesRegex(ValueError, "已存在"):
+            fill(dest, [edit], self.work / "duplicate.pptx")
+        with self.assertRaisesRegex(ValueError, "画布"):
+            fill(src, [dict(edit, box=[0.8, 0, 0.7, 1])], self.work / "outside.pptx")
+
+    def test_projection_reports_source_drift_and_invisible_ink(self):
+        path = self.work / "deck.json"
+        spec = {
+            "mode": "conference",
+            "language": "en",
+            "slides": [
+                {
+                    "layout": "cover",
+                    "title": "Current title",
+                    "eyebrow": "Study",
+                    "notes": "Source record",
+                }
+            ],
+        }
+        path.write_text(json.dumps(spec))
+        deck = self.work / "talk.pptx"
+        run = self.cli("build", path, deck)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        pdf = self.work / "projection.pdf"
+        with fitz.open() as doc:
+            page = doc.new_page(width=960, height=540)
+            page.insert_text((60, 60), "Current title", color=(1, 1, 1))
+            page.insert_text((60, 110), "Study")
+            doc.save(pdf)
+        args = ["check", deck, "--pdf", pdf, "--spec", path]
+        run = self.cli(*args, "--overview", self.work / "overview.pdf")
+        self.assertEqual(run.returncode, 0, run.stderr)
+        result = json.loads(run.stdout)
+        self.assertIn("possible_low_contrast", [i["code"] for i in result["warnings"]])
+        with fitz.open(self.work / "overview.pdf") as overview:
+            self.assertIn("Review", overview[0].get_text())
+        spec["slides"][0]["title"] = "Updated title"
+        path.write_text(json.dumps(spec))
+        drift = self.cli(*args)
+        self.assertEqual(drift.returncode, 1, drift.stderr)
+        self.assertIn(
+            "source_text", [i["code"] for i in json.loads(drift.stdout)["errors"]]
+        )
+        with fitz.open() as doc:
+            doc.new_page(width=960, height=540).insert_text((60, 60), "Stale title")
+            stale = self.work / "stale.pdf"
+            doc.save(stale)
+        run = self.cli("check", deck, "--pdf", stale, "--spec", path)
+        self.assertIn(
+            "pdf_text_missing", [i["code"] for i in json.loads(run.stdout)["errors"]]
+        )
+        self.assertNotEqual(
+            self.cli(*args, "--overview", pdf, "--replace").returncode, 0
+        )
 
     def test_campus_preserves_native_master_or_uses_its_own_starter(self):
         draft = self.work / "quarter"

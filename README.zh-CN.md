@@ -34,6 +34,15 @@ python research-deck/scripts/deck.py build examples/iris/deck.json out/iris.pptx
 
 用 PowerPoint 打开 `out/iris.pptx`。如需导出 PDF，安装 LibreOffice 并让终端能找到 `soffice`，再运行 `python research-deck/scripts/deck.py preview out/iris.pptx out/iris.pdf`。原生公式页还需要 Pandoc 以及 LibreOffice 的 Writer 和 Math 组件。在精简的 Debian 或 Ubuntu 环境中，请安装 libreoffice-writer 和 libreoffice-math。仓库提供的 PDF 可以直接阅读。
 
+## 复用和核验成稿
+
+```sh
+python research-deck/scripts/deck.py draft examples/iris/deck.json out/iris-work
+python research-deck/scripts/deck.py check docs/decks/iris.pptx --spec out/iris-work/deck.json --pdf docs/decks/iris.pdf --overview out/iris-overview.pdf
+```
+
+工作稿会带上引用的 CSV、封面图版和正文插图。核验结果给出数据差异或疑似排版问题的页码。校方原稿只有底图时，可以添加原生文本框并沿用学校母版。[鸢尾花逐页总览](docs/decks/iris-overview.pdf) · [编辑计划与核验说明](research-deck/references/spec.md)
+
 ## 交给智能体制作
 
 用支持项目级 skills 的智能体打开这个仓库，即可通过 `.agents/skills/research-deck` 使用本项目，也可以将 `research-deck/` 复制到智能体的技能目录。调用名为 `$research-deck`。

@@ -135,7 +135,7 @@ def safe_figure(path, page):
             image.save(buf, format="PNG")
         buf.seek(0)
         return buf
-    import fitz
+    from pdf_api import fitz
 
     required(page, ["pdf_page", "crop"])
     with fitz.open(path) as doc:
@@ -175,7 +175,7 @@ def image_contain(slide, buf, x, y, w, h, alt):
 
 def attach_formula(slide, latex, x, y, w, h, color):
     """Use the same Office Math expression for editing and the rendered fallback."""
-    import fitz
+    from pdf_api import fitz
     from PIL import ImageOps
 
     if not shutil.which("pandoc") or not shutil.which("soffice"):

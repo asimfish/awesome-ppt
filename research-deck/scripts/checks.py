@@ -1,0 +1,295 @@
+"""Compare editable content with a fresh build and inspect the projected pages."""
+
+import io
+import json
+import unicodedata
+from collections import Counter
+from decimal import ROUND_HALF_UP, Decimal, localcontext
+from zipfile import ZipFile
+
+from lxml import etree
+from native import inventory, ordered_parts, query
+from pdf_api import fitz
+from render import Deck
+
+
+def compact(value):
+    return "".join(unicodedata.normalize("NFKC", value).split())
+
+
+def contents(page):
+    fields = {"text": [], "table": [], "chart": [], "notes": [page["notes"]]}
+    for obj in page["objects"]:
+        kind = obj["kind"]
+        if kind == "text":
+            fields[kind].extend(line for line in obj["paragraphs"] if line.strip())
+        elif kind in ("table", "chart"):
+            fields[kind].append(
+                json.dumps(
+                    obj.get("cells" if kind == "table" else "series"),
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
+    return {key: Counter(items) for key, items in fields.items()}
+
+
+def projected_strings(page):
+    for obj in page["objects"]:
+        if obj["kind"] == "text":
+            yield from obj["paragraphs"]
+        elif obj["kind"] == "table":
+            for row in obj["cells"]:
+                yield from row
+
+
+def data_marks(package, part):
+    root = etree.fromstring(package.read(part))
+    marks = Counter()
+    for shape in query(root, "./p:cSld/p:spTree/p:sp"):
+        name = query(shape, "./p:nvSpPr/p:cNvPr/@name")[0]
+        if " · " not in name:
+            continue
+        transform = query(shape, "./p:spPr/a:xfrm/*")
+        marks[
+            (
+                name,
+                tuple(tuple(sorted(el.attrib.items())) for el in transform),
+                tuple(query(shape, "./p:spPr/a:solidFill/a:srgbClr/@val")),
+            )
+        ] += 1
+    return marks
+
+
+def blends_into_background(span, rect, raster, scale):
+    """Flag near-identical ink and surrounding pixels, as a visual review hint."""
+    ink = tuple(span["color"] >> shift & 255 for shift in (16, 8, 0))
+    samples = []
+    for fraction in (0.05, 0.25, 0.50, 0.75, 0.95):
+        x = int((rect.x0 + rect.width * fraction) * scale) - raster.x
+        for y in (
+            int(rect.y0 * scale) - raster.y - 1,
+            int(rect.y1 * scale) - raster.y + 1,
+        ):
+            if 0 <= x < raster.width and 0 <= y < raster.height:
+                samples.append(raster.pixel(x, y))
+    return len(samples) >= 5 and sum(
+        max(abs(a - b) for a, b in zip(ink, pixel)) <= 22 for pixel in samples
+    ) >= 0.8 * len(samples)
+
+
+def projection_issues(page):
+    data = page.get_text(
+        "dict",
+        clip=fitz.INFINITE_RECT(),
+        flags=fitz.TEXTFLAGS_DICT & ~fitz.TEXT_PRESERVE_IMAGES,
+    )
+    scale = min(1, 1100 / max(page.rect.width, page.rect.height))
+    raster = page.get_pixmap(
+        matrix=fitz.Matrix(scale, scale), colorspace=fitz.csRGB, alpha=False
+    )
+    lines, faint = [], []
+    for block_id, block in enumerate(data["blocks"]):
+        for line in block.get("lines", []):
+            text = "".join(s["text"] for s in line["spans"])
+            rect = fitz.Rect(line["bbox"]) * page.rotation_matrix
+            if abs(rect) and text.strip():
+                lines.append((block_id, rect, text))
+            for span in line["spans"]:
+                if len(compact(span["text"])) >= 2 and blends_into_background(
+                    span, fitz.Rect(span["bbox"]) * page.rotation_matrix, raster, scale
+                ):
+                    faint.append(span["text"])
+    canvas = page.rect + (-1.5, -1.5, 1.5, 1.5)
+    outside = [text for _, rect, text in lines if not canvas.contains(rect)]
+    overlaps = []
+    active = []
+    for block, rect, text in sorted(lines, key=lambda line: line[1].y0):
+        active = [(b, r, t) for b, r, t in active if r.y1 > rect.y0]
+        for other_block, other, other_text in active:
+            if block == other_block or text == other_text:
+                continue
+            overlap = abs(rect & other)
+            if overlap > 0.55 * min(abs(rect), abs(other)):
+                overlaps.append(f"{other_text[:45]} / {text[:45]}")
+        active.append((block, rect, text))
+    issues = []
+    if faint:
+        issues.append(("possible_low_contrast", faint[:3]))
+    if outside:
+        issues.append(("text_outside_canvas", outside[:3]))
+    if overlaps:
+        issues.append(("possible_text_overlap", overlaps[:3]))
+    return lines, issues
+
+
+def compare_source(reference, source, actual, record):
+    buf = io.BytesIO()
+    reference.build().save(buf)
+    expected = inventory(buf)
+    with ZipFile(buf) as expected_package, ZipFile(source) as actual_package:
+        for i, (lhs, rhs) in enumerate(
+            zip(ordered_parts(expected_package), ordered_parts(actual_package)), 1
+        ):
+            if reference.pages[i - 1]["layout"] in ("dotplot", "unitgrid") and (
+                data_marks(expected_package, lhs) != data_marks(actual_package, rhs)
+            ):
+                record(
+                    "errors",
+                    i,
+                    "source_data_marks",
+                    "数据标记的数量、位置或填色与逐页稿不同",
+                )
+    if len(actual) != len(expected):
+        record(
+            "errors",
+            None,
+            "source_page_count",
+            {"pptx": len(actual), "spec": len(expected)},
+        )
+    for i, (before, after) in enumerate(zip(expected, actual), 1):
+        wanted, got = contents(before), contents(after)
+        for field, values in wanted.items():
+            if values != got[field]:
+                record(
+                    "errors",
+                    i,
+                    "source_" + field,
+                    {
+                        "expected": list((values - got[field]).elements())[:1],
+                        "found": list((got[field] - values).elements())[:1],
+                    },
+                )
+
+
+def chart_findings(reference, slide, projected, visible_lines):
+    heads, rows = reference.sources.select(slide)
+    decimals = slide.get("decimals", 1)
+    low = Decimal(str(slide["min"])) if "min" in slide else None
+    high = Decimal(str(slide["max"])) if "max" in slide else None
+    labels, clipped = set(), []
+    with localcontext() as ctx:
+        ctx.rounding = ROUND_HALF_UP
+        for row in rows:
+            for column, raw in zip(heads[1:], row[1:]):
+                value = Decimal(raw)
+                labels.add(format(value, f".{decimals}f"))
+                if (low is not None and value < low) or (
+                    high is not None and value > high
+                ):
+                    clipped.append(f"{row[0]} / {column} = {raw}")
+    text = visible_lines + [word[4] for word in projected.get_text("words")]
+    tokens = {compact(s).replace(",", ".").replace("−", "-") for s in text}
+    return clipped, sorted(labels - tokens)
+
+
+def check(source, preview, spec=None, directory=None, style=None):
+    actual = inventory(source)
+    report = {"slides": len(actual), "errors": [], "warnings": []}
+
+    def record(level, number, code, detail):
+        report[level].append({"slide": number, "code": code, "detail": detail})
+
+    reference = None
+    if spec is not None:
+        reference = Deck(spec, directory, style)
+        compare_source(reference, source, actual, record)
+    with ZipFile(source) as package:
+        size = query(
+            etree.fromstring(package.read("ppt/presentation.xml")), "./p:sldSz"
+        )[0]
+        ratio = int(size.get("cx")) / int(size.get("cy"))
+        visible = [
+            i
+            for i, name in enumerate(ordered_parts(package))
+            if etree.fromstring(package.read(name)).get("show", "1")
+            not in ("0", "false")
+        ]
+    try:
+        rendered = fitz.open(preview)
+    except (RuntimeError, ValueError) as exc:
+        raise ValueError(f"无法读取 PDF 预览：{preview}") from exc
+    with rendered as document:
+        order = list(range(len(actual))) if len(document) == len(actual) else visible
+        report["pdf_slides"] = (
+            [i + 1 for i in order]
+            if len(document) == len(order)
+            else [None] * len(document)
+        )
+        if len(document) != len(order):
+            record(
+                "errors",
+                None,
+                "pdf_page_count",
+                {"pdf": len(document), "pptx": len(actual), "visible": len(visible)},
+            )
+        else:
+            for index, projected in zip(order, document):
+                page = actual[index]
+                if (
+                    abs((projected.rect.width / projected.rect.height) / ratio - 1)
+                    > 0.01
+                ):
+                    record(
+                        "errors",
+                        index + 1,
+                        "pdf_aspect_ratio",
+                        "PDF 画布比例与 PPTX 不匹配",
+                    )
+                lines, issues = projection_issues(projected)
+                for code, examples in issues:
+                    record("warnings", index + 1, code, examples)
+                visible_lines = [
+                    s for _, rect, s in lines if rect.intersects(projected.rect)
+                ]
+                projected_text = compact("".join(visible_lines))
+                missing = [
+                    s
+                    for s in projected_strings(page)
+                    if compact(s) and compact(s) not in projected_text
+                ]
+                if missing:
+                    record(
+                        "errors" if spec is not None else "warnings",
+                        index + 1,
+                        "pdf_text_missing",
+                        {"count": len(missing), "examples": missing[:3]},
+                    )
+                if reference and index < len(reference.pages):
+                    slide = reference.pages[index]
+                    if slide["layout"] == "chart":
+                        clipped, absent = chart_findings(
+                            reference, slide, projected, visible_lines
+                        )
+                        if clipped:
+                            record(
+                                "warnings", index + 1, "chart_axis_clips_data", clipped
+                            )
+                        if absent:
+                            record("errors", index + 1, "pdf_chart_labels", absent)
+    report["ok"] = not report["errors"]
+    return report
+
+
+def overview(preview, dest, slide_numbers, findings):
+    """Six vector slide previews per page, retaining the source aspect ratios."""
+    flagged = {entry["slide"] for entry in findings}
+    with fitz.open(preview) as pdf, fitz.open() as sheet:
+        for i, source_page in enumerate(pdf):
+            row, col = divmod(i % 6, 2)
+            if i % 6 == 0:
+                page = sheet.new_page(width=1000, height=920)
+            x, y = 26 + col * 485, 20 + row * 300
+            n = slide_numbers[i]
+            label = f"Slide {n}" if n is not None else f"PDF page {i + 1}"
+            if n in flagged and n is not None:
+                label += "  /  Review"
+            page.insert_text(
+                (x, y + 14),
+                label,
+                fontsize=12,
+                color=(0.56, 0.16, 0.13) if n in flagged else (0.12, 0.20, 0.23),
+            )
+            if source_page.get_contents():
+                page.show_pdf_page(fitz.Rect(x, y + 24, x + 462, y + 284), pdf, i)
+        sheet.save(dest, garbage=4, deflate=True)
