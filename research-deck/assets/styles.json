@@ -8,5 +8,9 @@
   "development":{"name":"研制评审 · 靛蓝与朱红","treatment":"development","paper":"FFFFFF","ink":"263650","muted":"576479","accent":"9D1838","panel":"F0F3F8","line":"CAD0DF","hero":"304370","onhero":"FFFFFF","dark":false},
   "quarterly":{"name":"季度答辩 · 蓝色通栏","treatment":"quarterly","paper":"FFFFFF","ink":"193359","muted":"4D6279","accent":"20519A","panel":"EEF4FB","line":"B8C9DF","hero":"174988","onhero":"FFFFFF","dark":false},
   "herbarium":{"name":"博物图谱","treatment":"atlas","paper":"F8F5EB","ink":"243B31","muted":"54665B","accent":"3E6552","panel":"E5EBDD","line":"C0CBBA","hero":"233E34","onhero":"F9F4E7","dark":false},
-  "briefing":{"name":"季度决策简报","treatment":"briefing","paper":"F8F9F6","ink":"172E43","muted":"485E70","accent":"2252B6","panel":"E5ECF7","line":"BFCADA","hero":"152D49","onhero":"F4F7FC","dark":false}
+  "briefing":{"name":"季度决策简报","treatment":"briefing","paper":"F8F9F6","ink":"172E43","muted":"485E70","accent":"2252B6","panel":"E5ECF7","line":"BFCADA","hero":"152D49","onhero":"F4F7FC","dark":false},
+  "pku-folio":{"name":"北大学术沙龙 · 绛红与暖纸","treatment":"folio","paper":"FBF8F1","ink":"36282B","muted":"67565B","accent":"90233D","panel":"F3E8DF","line":"CDBAB4","hero":"F4E8DF","onhero":"71243A","dark":false},
+  "tsinghua-tech":{"name":"清华科研汇报 · 紫色通栏","treatment":"band","paper":"FAF8FC","ink":"2F2738","muted":"66586D","accent":"683782","panel":"EFE7F4","line":"CBBBD5","hero":"4E2D63","onhero":"FFFFFF","dark":false},
+  "buaa-engineering":{"name":"北航工程开题 · 航蓝导航","treatment":"rail","paper":"F8FAFC","ink":"193344","muted":"4C6270","accent":"126288","panel":"E1EDF3","line":"AAC2CE","hero":"143E5A","onhero":"F8FBFF","dark":false},
+  "fudan-survey":{"name":"复旦方法研讨 · 海军蓝与雾蓝","treatment":"briefing","paper":"FBFAF6","ink":"182F47","muted":"506273","accent":"174F80","panel":"E4EBF1","line":"BCC9D3","hero":"193955","onhero":"FFFDF8","dark":false}
 }

@@ -24,4 +24,4 @@ Each image below comes from the editable starter deck. Choose the question your 
 
 For an English talk based on published measurements, open the [Iris deck](decks/iris.pptx) or its [PDF preview](decks/iris.pdf). For your own work, start from a [mode specification](../research-deck/assets/starters) and choose a [visual style](../research-deck/assets/styles.json).
 
-Two additional campus starters cover the SJTU development review and Beijing Zhongguancun Academy quarterly defense. [University template gallery](campuses.md)
+Six campus starters cover a PKU colloquium, Tsinghua research talk, Beihang engineering proposal, Fudan methods seminar, SJTU development review and Beijing Zhongguancun Academy quarterly defense. [University template gallery](campuses.md)

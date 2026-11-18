@@ -1,0 +1,98 @@
+{
+  "mode": "conference",
+  "style": "pku-folio",
+  "language": "zh",
+  "title": "书目里的「佚名」从何而来？",
+  "presenter": "AwesomePPT · 教学模拟案例",
+  "datasets": {
+    "sample": {
+      "file": "catalog-attribution.csv",
+      "key": "归属依据",
+      "source": "教学模拟 · 书目署名核读表"
+    }
+  },
+  "facts": {
+    "extra": {
+      "dataset": "sample",
+      "row": "序跋可补录",
+      "column": "记录数",
+      "decimals": 0
+    },
+    "open": {
+      "dataset": "sample",
+      "row": "仍待考证",
+      "column": "记录数",
+      "decimals": 0
+    }
+  },
+  "slides": [
+    {
+      "layout": "cover",
+      "section": "",
+      "title": "书目里的「佚名」从何而来？",
+      "notes": "封面展示的是 AwesomePPT 的教学模拟案例，替换为本次真实课题、汇报人和来源后使用。",
+      "eyebrow": "学术沙龙   /   文献与书目",
+      "subtitle": "从题名页读到序跋，追查一组刊本的作者线索。",
+      "credit": "AwesomePPT   /   教学模拟案例"
+    },
+    {
+      "layout": "contrast",
+      "section": "材料",
+      "title": "同一部书，两处署名线索",
+      "notes": "说明目录汇总与原书记录属于不同层级。",
+      "left": {
+        "heading": "先读题名页",
+        "text": "辨认姓名及其旁边的著、编、校等责任说明。"
+      },
+      "right": {
+        "heading": "再读序跋",
+        "text": "将序跋中的自署与文本角色对照，单列证据不足的记录。"
+      }
+    },
+    {
+      "layout": "process",
+      "section": "方法",
+      "title": "每条归属都保留可回查的证据",
+      "notes": "真实工作稿补入版本、馆藏号、叶码和图像位置。",
+      "steps": [
+        {
+          "heading": "定位版本",
+          "text": "为每部刊本登记馆藏号与版本。"
+        },
+        {
+          "heading": "核读署名",
+          "text": "分别摘录题名页、序跋与署名角色。"
+        },
+        {
+          "heading": "保留分歧",
+          "text": "第二位读者复核有冲突的条目。"
+        }
+      ]
+    },
+    {
+      "layout": "chart",
+      "section": "发现",
+      "title": "序跋为 {{extra}} 条记录补上署名线索",
+      "notes": "条目按最终依据互斥计数。示例中的三组共 48 条，仅用于展示核读方法。",
+      "dataset": "sample",
+      "columns": [
+        "记录数"
+      ],
+      "decimals": 0,
+      "min": 0,
+      "max": 30,
+      "axis_title": "书目记录数",
+      "reading": "还有 {{open}} 条缺少足够的归属依据。"
+    },
+    {
+      "layout": "spotlight",
+      "section": "讨论",
+      "title": "什么证据足以改写一条书目？",
+      "notes": "请听众指出补录的证据门槛，并提出下一轮优先核读的材料。",
+      "value": "{{open}} 条",
+      "label": "仍待考证的记录",
+      "heading": "下一步核对异本",
+      "text": "优先查看同书异本中的署名与序跋。两条独立线索一致时，再更新归属。"
+    }
+  ]
+}

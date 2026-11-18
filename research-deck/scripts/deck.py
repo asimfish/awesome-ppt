@@ -23,6 +23,15 @@ def read_json(path):
 CAMPUSES = read_json(ASSETS / "campuses.json")
 
 
+def campus_key(value):
+    query = value.strip().casefold()
+    for key, entry in CAMPUSES.items():
+        names = (key, entry["name"], entry["en"], *entry.get("aliases", []))
+        if any(query == name.casefold() for name in names):
+            return key
+    raise argparse.ArgumentTypeError("未知学校，请通过 catalog 查看可用学校 ID")
+
+
 @contextmanager
 def new_draft(dest):
     dest = dest.expanduser().absolute()
@@ -142,7 +151,7 @@ def main():
     start.add_argument("directory", type=Path)
     start.add_argument("--style", choices=STYLES)
     school = sub.add_parser("campus", help="查询高校来源、创建专用起稿或导入原生 PPTX")
-    school.add_argument("institution", choices=CAMPUSES)
+    school.add_argument("institution", type=campus_key, metavar="学校简称、全称或ID")
     school.add_argument("directory", nargs="?", type=Path)
     school.add_argument(
         "--template", type=Path, help="从持有的学校 PPTX 创建保留母版的工作副本"

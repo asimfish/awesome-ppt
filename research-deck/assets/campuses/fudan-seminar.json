@@ -1,0 +1,123 @@
+{
+  "mode": "journal-club",
+  "style": "fudan-survey",
+  "language": "zh",
+  "title": "一次回访之后，谁回应了问卷？",
+  "presenter": "AwesomePPT · 教学模拟案例",
+  "datasets": {
+    "sample": {
+      "file": "survey-response.csv",
+      "key": "联系阶段",
+      "source": "教学模拟 · 阅读习惯调查回访台账"
+    }
+  },
+  "facts": {
+    "base": {
+      "dataset": "sample",
+      "row": "首次联系",
+      "column": "累计应答",
+      "decimals": 0
+    },
+    "post": {
+      "dataset": "sample",
+      "row": "一次回访后",
+      "column": "累计应答",
+      "decimals": 0
+    },
+    "added": {
+      "dataset": "sample",
+      "row": "一次回访后",
+      "column": "累计应答",
+      "decimals": 0,
+      "minus_row": "首次联系"
+    },
+    "invited": {
+      "dataset": "sample",
+      "row": "首次联系",
+      "column": "受邀人数",
+      "decimals": 0
+    }
+  },
+  "slides": [
+    {
+      "layout": "cover",
+      "section": "",
+      "title": "一次回访之后，\n谁回应了问卷？",
+      "notes": "封面展示的是 AwesomePPT 的教学模拟案例，替换为本次真实课题、汇报人和来源后使用。",
+      "eyebrow": "方法研讨   /   问卷调查",
+      "subtitle": "跟踪同一批邀请对象，区分应答人数变化与样本代表性。",
+      "credit": "AwesomePPT   /   教学模拟案例",
+      "metrics": [
+        {
+          "label": "同一批受邀对象",
+          "value": "{{invited}} 人"
+        },
+        {
+          "label": "回访新增应答",
+          "value": "{{added}} 人"
+        }
+      ]
+    },
+    {
+      "layout": "process",
+      "section": "研究设计",
+      "title": "沿用同一份名单，只增加一次回访",
+      "notes": "复用时补充抽样框、邀请渠道、回访时间和匿名关联方式。",
+      "steps": [
+        {
+          "heading": "首次联系",
+          "text": "发出问卷并记录首次应答。"
+        },
+        {
+          "heading": "定向回访",
+          "text": "仅再联系尚未回应的受邀对象。"
+        },
+        {
+          "heading": "去重对照",
+          "text": "按匿名编号合并两轮应答。"
+        }
+      ]
+    },
+    {
+      "layout": "unitgrid",
+      "section": "结果",
+      "title": "累计应答由 {{base}} 人增至 {{post}} 人",
+      "notes": "方格按累计计数排列，位置并不对应受邀者编号。",
+      "dataset": "sample",
+      "rows": [
+        "首次联系",
+        "一次回访后"
+      ],
+      "columns": [
+        "累计应答",
+        "受邀人数"
+      ],
+      "legend": "每格代表一位受邀者。深色表示截至该阶段已经回应。"
+    },
+    {
+      "layout": "contrast",
+      "section": "解释",
+      "title": "增加覆盖之后，代表性仍需检验",
+      "notes": "已有台账只支持回应人数变化。背景资料齐备时才可比较各组构成。",
+      "left": {
+        "heading": "台账已说明",
+        "text": "同一批人中，一次回访增加了 {{added}} 份应答。"
+      },
+      "right": {
+        "heading": "还需要的证据",
+        "text": "首次应答者、新增应答者和未应答者在关键属性上的分布。"
+      }
+    },
+    {
+      "layout": "decision",
+      "section": "研讨问题",
+      "title": "怎样判断回访改善了样本覆盖？",
+      "notes": "讨论可获得的抽样框属性、非应答偏差和隐私约束，决定下一张分组表的口径。",
+      "takeaway": "下一步比较不同人群的回应比例。",
+      "items": [
+        "沿用预先定义的分组并同时报告分母。",
+        "对缺失背景字段的受邀者单独列项。"
+      ]
+    }
+  ]
+}

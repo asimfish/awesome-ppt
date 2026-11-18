@@ -1,6 +1,7 @@
 """Check that the published talk, the source table and a fresh build agree."""
 
 import csv
+import json
 import subprocess
 import sys
 import tempfile
@@ -110,9 +111,23 @@ def main():
             assert inventory(outputs) == inventory(
                 ROOT / "docs/decks" / outputs.name
             ), spec.stem
-        for campus, name in (("sjtu", "sjtu-review"), ("bza", "bza-quarterly")):
+        campuses = json.loads(
+            (SKILL / "assets/campuses.json").read_text(encoding="utf-8")
+        )
+        for campus, entry in campuses.items():
+            name = entry.get("starter")
+            if not name:
+                continue
             draft = work / campus
-            run(cli, "campus", campus, draft)
+            invocation = next(iter(entry.get("aliases", [])), campus)
+            run(cli, "campus", invocation, draft)
+            assert json.loads(
+                (draft / "deck.json").read_text(encoding="utf-8")
+            ) == json.loads(
+                (SKILL / "assets/campuses" / (name + ".json")).read_text(
+                    encoding="utf-8"
+                )
+            )
             output = draft / "talk.pptx"
             run(cli, "build", draft / "deck.json", output)
             assert inventory(output) == inventory(
@@ -121,7 +136,18 @@ def main():
             run(cli, "preview", output, draft / "talk.pdf")
             with fitz.open(draft / "talk.pdf") as pdf:
                 assert len(pdf) == len(inventory(output))
-    print("Both showcase decks, six general starters and two campus decks verified.")
+                shipped = ROOT / "docs/decks" / (name + ".pdf")
+                if shipped.exists():
+                    with fitz.open(shipped) as copy:
+                        assert len(copy) == len(pdf)
+                        title = json.loads(
+                            (draft / "deck.json").read_text(encoding="utf-8")
+                        )["slides"][0]["title"]
+                        for preview in (pdf, copy):
+                            assert "".join(title.split()) in "".join(
+                                preview[0].get_text().split()
+                            )
+    print("Both showcase decks, all general starters and all campus decks verified.")
 
 
 if __name__ == "__main__":

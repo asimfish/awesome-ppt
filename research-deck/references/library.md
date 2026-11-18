@@ -30,4 +30,4 @@
 
 外部学术样稿、模板和各自影响见[设计来源](../UPSTREAM.md)。
 
-研制总结与季度答辩另有两种场合专用风格 `development`、`quarterly`，以及九个机构的来源和导入入口。[高校模板库](campuses.md)
+院校场合可选北大 `pku-folio`、清华 `tsinghua-tech`、北航 `buaa-engineering`、复旦 `fudan-survey`、交大 `development`、北京中关村学院 `quarterly`。十所机构的来源与导入入口收录在校园目录。[高校模板库](campuses.md)

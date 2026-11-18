@@ -19,7 +19,7 @@ OpenAI’s release highlights how GPT-6.2 Astra designs slides and follows the l
 
 ## University templates
 
-Start with a nine-slide SJTU-style development review or a seven-slide Beijing Zhongguancun Academy-style quarterly defense. The institution catalog covers nine universities and academies, with official resource links and a local import path for your own PowerPoint masters. [Campus gallery and downloads](docs/campuses.md)
+Six campus starters cover a Peking University colloquium, Tsinghua research talk, Beihang engineering proposal, Fudan methods seminar, SJTU development review and Beijing Zhongguancun Academy quarterly defense. The catalog covers ten institutions and links to school resources. You can also import a native PowerPoint master. [Campus gallery and downloads](docs/campuses.md)
 
 ## Build your first deck
 
@@ -46,7 +46,7 @@ For a project review, provide the requirements and the test ledger. The acceptan
 
 [![Six rendered slides showing the different modes and styles](docs/media/modes.png)](docs/gallery.md)
 
-Pick a mode for the audience's question and a style for the room. Six narrative modes and eight general visual styles can be combined. There are two additional campus treatments. The Chinese starters are complete worked examples. The Iris talk is an English example.
+Pick a mode for the audience's question and a style for the room. Six narrative modes and eight general visual styles can be combined. There are six additional campus treatments. The Chinese starters are complete worked examples. The Iris talk is an English example.
 
 ```sh
 python research-deck/scripts/deck.py starter acceptance review-work --style review

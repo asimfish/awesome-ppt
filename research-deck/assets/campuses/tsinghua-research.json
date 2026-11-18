@@ -1,0 +1,93 @@
+{
+  "mode": "conference",
+  "style": "tsinghua-tech",
+  "language": "zh",
+  "title": "气温能改善次日用电预测吗？",
+  "presenter": "AwesomePPT · 教学模拟案例",
+  "datasets": {
+    "sample": {
+      "file": "energy-forecast.csv",
+      "key": "方法",
+      "source": "教学模拟 · 固定划分的能耗预测回测表"
+    }
+  },
+  "facts": {
+    "gain": {
+      "dataset": "sample",
+      "row": "日历基线",
+      "column": "周末 MAE（kWh）",
+      "decimals": 1,
+      "minus_row": "日历与气温"
+    }
+  },
+  "slides": [
+    {
+      "layout": "cover",
+      "section": "",
+      "title": "气温能改善次日用电预测吗？",
+      "notes": "封面展示的是 AwesomePPT 的教学模拟案例，替换为本次真实课题、汇报人和来源后使用。",
+      "eyebrow": "科研进展   /   建筑能耗",
+      "subtitle": "对照同一栋楼、同一测试时段的工作日与周末误差。",
+      "credit": "AwesomePPT   /   教学模拟案例"
+    },
+    {
+      "layout": "argument",
+      "section": "研究问题",
+      "title": "先用日历解释周期，再检验气温的增益",
+      "notes": "预测目标为次日整栋楼的用电量。所有数值均为演示用的模拟回测结果。",
+      "lead": "能否比日历基线多解释一点？",
+      "points": [
+        "基线使用星期与节假日特征。",
+        "改进模型额外使用预测时点可获得的次日预报气温。",
+        "两种模型都在相同日期上按日计算绝对误差。"
+      ]
+    },
+    {
+      "layout": "process",
+      "section": "回测设计",
+      "title": "按时间留出测试段，分别报告两种日型",
+      "notes": "此处给出实验设计。实际复用时标明起止日期、天气预报版本和缺失值处理。",
+      "steps": [
+        {
+          "heading": "冻结测试段",
+          "text": "用时间顺序划分训练和测试日期。"
+        },
+        {
+          "heading": "并行预测",
+          "text": "两种模型使用相同的历史用电记录。"
+        },
+        {
+          "heading": "拆分误差",
+          "text": "分别统计工作日与周末的平均绝对误差。"
+        }
+      ]
+    },
+    {
+      "layout": "chart",
+      "section": "回测结果",
+      "title": "加入气温后，两种日型的平均误差都下降",
+      "notes": "MAE 越小越好。该结果限于示例回测窗口，不代表跨楼栋泛化。",
+      "dataset": "sample",
+      "columns": [
+        "工作日 MAE（kWh）",
+        "周末 MAE（kWh）"
+      ],
+      "decimals": 1,
+      "min": 0,
+      "max": 30,
+      "axis_title": "平均绝对误差（kWh）",
+      "reading": "周末的平均绝对误差降低 {{gain}} kWh。"
+    },
+    {
+      "layout": "decision",
+      "section": "下一轮验证",
+      "title": "在另一栋楼复算同一组指标",
+      "notes": "让听众知道当前结果属于一个楼栋；下一轮验证将比较建筑与季节的变化。",
+      "takeaway": "冻结回测方案，再扩展到第二栋楼。",
+      "items": [
+        "沿用相同预测时点、基线与日型划分。",
+        "逐栋报告误差，并保留节假日异常案例。"
+      ]
+    }
+  ]
+}

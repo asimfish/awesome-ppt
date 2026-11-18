@@ -19,7 +19,7 @@ OpenAI 在 GPT-6.2 Astra 发布说明中专门展示了幻灯片设计，以及�
 
 ## 高校与院校模板
 
-上海交通大学研制总结有九页专用起稿，北京中关村学院季度答辩有七页专用起稿。目录共收录九所高校与院校，支持从校方获取模板并在本地导入原生 PPTX。[高校图册、样稿与校方入口](docs/campuses.md)
+可直接生成北大学术沙龙、清华科研进展、北航工程开题、复旦方法研讨、上海交大研制总结和北京中关村学院季度答辩六套可编辑起稿。高校目录共收录十所机构，也支持导入已有校方 PPTX。[高校图册、样稿与校方入口](docs/campuses.md)
 
 ## 在本机生成第一份 PPT
 
@@ -46,7 +46,7 @@ python research-deck/scripts/deck.py build examples/iris/deck.json out/iris.pptx
 
 [![文献组会、会议短讲、答辩、推进会、验收、项目演示的真实渲染页](docs/media/modes.png)](docs/gallery.md)
 
-六种汇报模式分别编排问题、证据和收束方式，八种通用视觉风格可以自由搭配，另外提供两种院校场合专用风格。内置起稿提供完整中文案例，鸢尾花短讲提供英文案例。
+六种汇报模式分别编排问题、证据和收束方式，八种通用视觉风格可以自由搭配，另外提供六种院校场合专用风格。内置起稿提供完整中文案例，鸢尾花短讲提供英文案例。
 
 ```sh
 python research-deck/scripts/deck.py starter acceptance review-work --style review

@@ -33,6 +33,10 @@
         "label": "2025 科技主题",
         "url": "https://www.env.tsinghua.edu.cn/2025nianduyanshiwengaomoban5-kejizhuti.pptx"
       }
+    ],
+    "starter": "tsinghua-research",
+    "aliases": [
+      "清华"
     ]
   },
   "pku": {
@@ -45,6 +49,10 @@
         "label": "校方模板 ZIP",
         "url": "https://vim.pku.edu.cn/docs/20240527144411870790.zip"
       }
+    ],
+    "starter": "pku-colloquium",
+    "aliases": [
+      "北大"
     ]
   },
   "fudan": {
@@ -57,6 +65,10 @@
         "label": "模板 1",
         "url": "https://simi.fudan.edu.cn/_upload/article/files/ec/6a/2afebadf4f1bb1575095030cc9bf/888bf5e1-8e0f-45f9-8ada-ac0532cdc246.pptx"
       }
+    ],
+    "starter": "fudan-seminar",
+    "aliases": [
+      "复旦"
     ]
   },
   "zju-ic": {
@@ -94,5 +106,25 @@
     "en": "University of Oslo",
     "source": "校方设计手册 · 校管设备中的演示母版",
     "url": "https://www.uio.no/english/about/designmanual/profile-in-use/powerpoint/"
+  },
+  "buaa": {
+    "name": "北京航空航天大学",
+    "en": "Beihang University",
+    "source": "党委宣传部视觉识别系统、电子信息工程学院本科毕业设计开题模板发布记录",
+    "url": "https://xcb.buaa.edu.cn/vixt.htm",
+    "resources": [
+      {
+        "label": "电子信息工程学院 · 本科毕设开题模板发布记录（2011）",
+        "url": "https://www.ee.buaa.edu.cn/info/1042/3074.htm"
+      },
+      {
+        "label": "学生社区 BUAANew · 可下载的北航 PPTX 参考稿",
+        "url": "https://github.com/BUAA-Wjay/BUAANew/tree/adc5568dfd2f55c9708a9e28f2124baa0393af3d/%E5%8C%97%E8%88%AAPPT%E6%A8%A1%E6%9D%BF"
+      }
+    ],
+    "starter": "buaa-proposal",
+    "aliases": [
+      "北航"
+    ]
   }
 }

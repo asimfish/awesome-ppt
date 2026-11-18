@@ -62,6 +62,7 @@ def render_showcase(fonts):
 def render(fonts):
     render_showcase(fonts)
     render_grid(fonts, MODES, "modes.png")
+    render_campus_spreads(fonts)
     render_grid(
         fonts,
         [
@@ -74,6 +75,36 @@ def render(fonts):
         ],
         "campuses.png",
     )
+
+
+def render_campus_spreads(fonts):
+    """Pair each new campus opening with the evidence page from the same deck."""
+    rows = (
+        ("pku-colloquium", "Peking University", "Research colloquium", 3),
+        ("tsinghua-research", "Tsinghua University", "Technical research talk", 3),
+        ("buaa-proposal", "Beihang University", "Engineering proposal", 3),
+        ("fudan-seminar", "Fudan University", "Methods seminar", 2),
+    )
+    width, gap, margin = 648, 22, 28
+    row_height = 444
+    gallery = Image.new(
+        "RGB", (2 * margin + 2 * width + gap, row_height * len(rows)), "#F4F2EB"
+    )
+    draw = ImageDraw.Draw(gallery)
+    title = ImageFont.truetype(str(fonts / "DejaVuSans-Bold.ttf"), 25)
+    label = ImageFont.truetype(str(fonts / "DejaVuSans.ttf"), 23)
+    for i, (name, institution, mode, evidence) in enumerate(rows):
+        top = i * row_height
+        draw.text((margin, top + 17), institution, font=title, fill="#20333B")
+        draw.text((margin + width + gap, top + 17), mode, font=label, fill="#41565A")
+        for col, index in enumerate((0, evidence)):
+            shot = slide_image(DECKS / (name + ".pdf"), index, width)
+            x, y = margin + col * (width + gap), top + 62
+            gallery.paste(shot, (x, y))
+            draw.rectangle(
+                (x - 1, y - 1, x + shot.width, y + shot.height), outline="#C2C6C2"
+            )
+    gallery.save(MEDIA / "campus-spreads.png", optimize=True)
 
 
 def render_grid(fonts, entries, output_name):
