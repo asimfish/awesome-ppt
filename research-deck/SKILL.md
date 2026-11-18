@@ -1,11 +1,13 @@
 ---
 name: research-deck
-description: Make editable, evidence-linked academic and project presentations in Chinese or English. Use when a user wants a paper reading, journal club, conference talk, defense, project update, development summary, acceptance review or demo as PPTX, or needs text updates in an existing institutional deck. 适合论文组会、学术分享、个人答辩、季度推进、研制总结与验收、项目路演。Do not use for a paper review without slides, an image-only poster, or a request exclusively for a website.
+description: AwesomePPT creates editable, evidence-linked academic and project presentations in Chinese or English. Use when a user wants a paper reading, journal club, conference talk, defense, project update, development summary, acceptance review or demo as PPTX, or needs text updates in an existing institutional deck. 适合论文组会、学术分享、个人答辩、季度推进、研制总结与验收、项目路演。Do not use for a paper review without slides, an image-only poster, or a request exclusively for a website.
 ---
 
-# 用证据制作学术与项目汇报
+# AwesomePPT · 学术与项目汇报
 
 默认交付可编辑的 16:9 PPTX。根据听众要理解的问题或需要作出的决定选择模式，根据投影环境、内容密度和用户偏好选择风格。用户指定模板、时间、页数、语言或格式时，优先落实这些要求。用用户使用的语言写标题与备注。
+
+学术短讲有标本、仪器或实验原图时，可用带署名的图版开场；需说明个体差异时，在均值前展示原始观测。短项目评审可在封面先交代交付与遗留项，结尾把待决定的资源、责任人和验收证据放在一起。同一批样本的两次计数可以选用方格图。选择具体版式见[模式与风格库](references/library.md)。
 
 ## 从材料到成稿
 
@@ -32,7 +34,7 @@ python3 scripts/deck.py preview 工作稿/论文组会.pptx 工作稿/论文组�
 
 ## 高校与科研院校
 
-如果用户点名学校，先用 `python3 scripts/deck.py campus 学校ID` 核对机构层级、来源和可用起稿。上海交通大学研制总结用 `campus sjtu 新目录`，北京中关村学院季度答辩用 `campus bza 新目录`。从专用起稿生成时，照常调用 `build`；这些是 CiteSlide 的原创工作模板。若用户要求沿用校徽、母版和已有页序，优先用 `campus 学校ID 新目录 --template 校方文件.pptx` 导入原版。按 `objects.json` 填写 `edits.json` 后对工作副本调用 `fill`。学院工具需要身份认证时，使用用户持有的模板或参考稿。用户提供截图时，用它判断留白、层级和颜色，输出需编辑的布局与可追溯的图表。原生母版保真路线需要 PPTX 文件。[高校与院校使用指南](references/campuses.md)
+如果用户点名学校，先用 `python3 scripts/deck.py campus 学校ID` 核对机构层级、来源和可用起稿。上海交通大学研制总结用 `campus sjtu 新目录`，北京中关村学院季度答辩用 `campus bza 新目录`。从专用起稿生成时，照常调用 `build`；这些是 AwesomePPT 的原创工作模板。若用户要求沿用校徽、母版和已有页序，优先用 `campus 学校ID 新目录 --template 校方文件.pptx` 导入原版。按 `objects.json` 填写 `edits.json` 后对工作副本调用 `fill`。学院工具需要身份认证时，使用用户持有的模板或参考稿。用户提供截图时，用它判断留白、层级和颜色，输出需编辑的布局与可追溯的图表。原生母版保真路线需要 PPTX 文件。[高校与院校使用指南](references/campuses.md)
 
 当前工作区若有 `高校模板库/目录.md`，先按校名和用途查本地索引。用户要求「交大研制总结」或「北京学院季度答辩」时优先使用索引内带校方封面与标识的版本。更新既有页时把对应 PPTX 传给 `campus --template`；重编整稿时将该模板旁的 `deck.json`、CSV 和 `stationery` 图件复制到新的工作目录，再按实际材料构建。学校和院系都明确时，匹配相同的发布层级。
 

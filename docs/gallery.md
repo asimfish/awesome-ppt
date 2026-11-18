@@ -1,5 +1,14 @@
 # Template gallery · 模板图册
 
+[![Covers of the botanical talk and project review](media/awesome-ppt.png)](../README.md)
+
+| Worked example | Editable deck | Projection preview | Inputs |
+|---|---|---|---|
+| How long is an iris petal? · Botanical research talk | [PPTX](decks/iris.pptx) | [PDF](decks/iris.pdf) | [UCI measurements and plate](../examples/iris) |
+| 馆藏检索准备好试点了吗？ · 中文季度评审 | [PPTX](decks/project-review.pptx) | [PDF](decks/project-review.pdf) | [模拟交付台账与逐页稿](../examples/project-review) |
+
+## Mode starters
+
 Each image below comes from the editable starter deck. Choose the question your audience needs answered, then download the corresponding PPTX. The six Chinese decks use an original, illustrative archive-retrieval project.
 
 ![Six rendered pages from the starter decks](media/modes.png)

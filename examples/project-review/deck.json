@@ -1,0 +1,152 @@
+{
+  "mode": "progress",
+  "style": "briefing",
+  "language": "zh",
+  "title": "馆藏检索试点季度评审",
+  "presenter": "AwesomePPT · 教学模拟案例",
+  "datasets": {
+    "pilot": {
+      "file": "pilot.csv",
+      "key": "轮次",
+      "source": "模拟试点 · 固定任务回放记录 · pilot.csv"
+    },
+    "delivery": {
+      "file": "delivery.csv",
+      "key": "交付项",
+      "source": "模拟试点 · 交付台账 · delivery.csv"
+    }
+  },
+  "facts": {
+    "tasks": {
+      "dataset": "pilot",
+      "row": "本季",
+      "column": "任务总数",
+      "decimals": 0
+    },
+    "hits": {
+      "dataset": "pilot",
+      "row": "本季",
+      "column": "命中任务",
+      "decimals": 0
+    },
+    "base": {
+      "dataset": "pilot",
+      "row": "基线",
+      "column": "命中任务",
+      "decimals": 0
+    },
+    "window": {
+      "dataset": "pilot",
+      "row": "本季",
+      "column": "演练窗口（分钟）",
+      "decimals": 0
+    },
+    "delivered": {
+      "dataset": "delivery",
+      "count_where": {
+        "column": "本季状态",
+        "equals": "已交付"
+      }
+    },
+    "pending": {
+      "dataset": "delivery",
+      "count_where": {
+        "column": "本季状态",
+        "equals": "待验证"
+      }
+    }
+  },
+  "slides": [
+    {
+      "layout": "cover",
+      "eyebrow": "馆藏数字化   /   季度评审",
+      "title": "馆藏检索\n准备好试点了吗？",
+      "subtitle": "离线回放已完成。开放试点前，还需验证索引能否按预期恢复。",
+      "credit": "AwesomePPT   /   教学模拟案例",
+      "metrics": [
+        {
+          "label": "固定查询任务命中",
+          "value": "{{hits}} / {{tasks}}"
+        },
+        {
+          "label": "已交付事项",
+          "value": "{{delivered}} 项"
+        },
+        {
+          "label": "待验证事项",
+          "value": "{{pending}} 项"
+        }
+      ],
+      "notes": "这是一份虚构项目的评审样稿。命中指预先指定的馆藏记录出现在前五项。交付项、负责人和编号均为模拟。"
+    },
+    {
+      "layout": "unitgrid",
+      "section": "试点评估",
+      "title": "同一组任务，命中查询从 {{base}} 项增至 {{hits}} 项",
+      "dataset": "pilot",
+      "columns": [
+        "命中任务",
+        "任务总数"
+      ],
+      "rows": [
+        "基线",
+        "本季"
+      ],
+      "legend": "每格代表一次查询。深色表示命中，浅色表示未命中。",
+      "notes": "两次回放使用相同的 80 项查询。每幅图按计数填格，格子的位置不代表同一个查询 ID，无法由本图推断哪几个任务改变结果。"
+    },
+    {
+      "layout": "table",
+      "section": "交付核对",
+      "title": "{{delivered}} 项交付可复查，恢复演练还缺回执",
+      "dataset": "delivery",
+      "columns": [
+        "本季状态",
+        "验收记录",
+        "下一责任人"
+      ],
+      "widths": [
+        1.12,
+        0.95,
+        1.85,
+        0.96
+      ],
+      "highlight_where": {
+        "column": "本季状态",
+        "equals": "待验证"
+      },
+      "notes": "前三个记录在本例中表示已交付。R-04 是预留的回执编号，演练完成后才可签字。",
+      "caption": "开通试点账号前，需要运维组补齐 R-04 恢复回执。"
+    },
+    {
+      "layout": "process",
+      "section": "恢复验证",
+      "title": "运维组主导演练，测试组独立复核",
+      "steps": [
+        {
+          "heading": "冻结快照",
+          "text": "检索组交接 I-02，记录索引版本和构建时间。"
+        },
+        {
+          "heading": "恢复索引",
+          "text": "运维组在预留环境恢复快照，记录起止时间。"
+        },
+        {
+          "heading": "复查回放",
+          "text": "测试组重跑固定查询，核对结果后签署 R-04。"
+        }
+      ],
+      "notes": "三个动作有明确交接关系。上线前复核演练记录与固定查询的回放结果。"
+    },
+    {
+      "layout": "spotlight",
+      "section": "提请决定",
+      "title": "请批准一次恢复演练窗口",
+      "label": "建议预留的测试环境时间",
+      "value": "{{window}} 分钟",
+      "heading": "由运维组牵头",
+      "text": "测试组在演练后一个工作日内提交 R-04。评委根据回执决定是否开放首批试点账号。",
+      "notes": "窗口时长是模拟排期建议。决定范围限于授权演练和复核，开放账号另行评审。"
+    }
+  ]
+}

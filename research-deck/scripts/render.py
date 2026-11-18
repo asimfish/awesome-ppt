@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tempfile
 import unicodedata
+from collections import Counter, defaultdict
 from copy import deepcopy
 from pathlib import Path
 from zipfile import ZipFile
@@ -39,6 +40,9 @@ LAYOUTS = (
     "table",
     "equation",
     "decision",
+    "dotplot",
+    "unitgrid",
+    "spotlight",
 )
 I = Inches
 
@@ -297,7 +301,7 @@ class Deck:
         )
         self.face = spec.get("font", default_face)
         default_heading = self.face
-        if self.style["treatment"] == "folio":
+        if self.style["treatment"] in ("folio", "atlas"):
             default_heading = (
                 ("Songti SC" if mac else "Noto Serif CJK SC")
                 if self.lang == "zh"
@@ -385,6 +389,13 @@ class Deck:
 
     def opener(self, p):
         t = self.style["treatment"]
+        if "plate" in p or "metrics" in p:
+            if ("plate" in p and "metrics" in p) or self.stationery:
+                raise ValueError(
+                    "分栏封面请选用一幅图版或一组指标，单位底图使用常规封面"
+                )
+            self.split_cover(p)
+            return
         self.rect(0, 0, W, H, "hero")
         left, width = 0.95, 11.35
         label_y, title_y, sub_y, credit_y = 0.86, 2.12, 4.08, 6.35
@@ -400,7 +411,7 @@ class Deck:
         elif t == "folio":
             self.rect(left, 1.5, width, 0.026, "accent")
             self.rect(left, 5.9, width, 0.015, "line")
-        elif t == "stage":
+        elif t in ("stage", "atlas", "briefing"):
             self.rect(left, 1.48, 2.0, 0.065, "accent")
         elif t == "band":
             self.rect(0, 4.0, W, 3.5, "paper")
@@ -469,11 +480,76 @@ class Deck:
                 credit_color,
             )
 
+    def split_cover(self, p):
+        self.rect(0, 0, W, H, "hero")
+        left, divider = 0.72, 7.35
+        self.txt(
+            p.get("eyebrow") or self.mode["en" if self.lang == "en" else "name"],
+            left,
+            0.55,
+            6.14,
+            0.43,
+            14,
+            10,
+            "onhero",
+            True,
+        )
+        self.rect(left, 1.12, 5.92, 0.015, "line")
+        self.txt(
+            p["title"],
+            left,
+            1.60,
+            6.15,
+            2.65,
+            56,
+            28,
+            "onhero",
+            self.style["treatment"] != "atlas",
+            True,
+            name="Title",
+        )
+        if p.get("subtitle"):
+            self.txt(p["subtitle"], left, 4.50, 5.94, 1.35, 22, 14, "onhero")
+        credit = p.get("credit") or self.spec.get("presenter", "")
+        self.txt(credit, left, 6.60, 6.12, 0.40, 13, 9, "onhero")
+        self.rect(divider, 0, W - divider, H, "paper")
+        x, w = divider + 0.46, W - divider - 0.92
+        if "plate" in p:
+            plate = p["plate"]
+            required(plate, ["file", "alt", "caption", "source"])
+            buf = safe_figure(self.directory / plate["file"], plate)
+            image_contain(self.slide, buf, x, 0.26, w, 6.35, plate["alt"])
+            self.rect(x, 6.73, w, 0.017, "line")
+            self.txt(plate["caption"], x, 6.91, w, 0.34, 12, 9, "muted")
+            return
+        metrics = p["metrics"]
+        if not isinstance(metrics, list) or not 2 <= len(metrics) <= 3:
+            raise ValueError("分栏封面需要 2–3 项指标")
+        pitch = 6.20 / len(metrics)
+        for idx, item in enumerate(metrics):
+            required(item, ["value", "label"])
+            y = 0.64 + idx * pitch
+            self.rect(x, y, w, 0.025, "line")
+            self.txt(item["label"], x, y + 0.16, w, 0.52, 17, 12, "muted")
+            self.txt(
+                item["value"],
+                x,
+                y + 0.67,
+                w,
+                pitch - 0.72,
+                57,
+                24,
+                "accent" if idx == 0 else "ink",
+                True,
+            )
+
     def frame(self, p):
         t = self.style["treatment"]
         self.x = 2.15 if t == "rail" else 0.70
         self.w = W - self.x - 0.70
         sec = p.get("section") or self.mode["name" if self.lang == "zh" else "en"]
+        if t in ("atlas", "briefing"):
+            self.rect(self.x, 0.63, self.w, 0.014, "line")
         if t == "rail":
             self.rect(0, 0, 1.8, H, "hero")
             for n, label in enumerate(self.sections[:8]):
@@ -657,7 +733,7 @@ class Deck:
             type(v) not in (int, float) or not 0 < v <= 100 for v in widths
         ):
             raise ValueError("widths 应与列数一致且均为正数")
-        h = min(4.46, 0.60 * (len(rows) + 1))
+        h = min(3.73 if p.get("caption") else 4.46, 0.60 * (len(rows) + 1))
         y = 2.04 + (4.46 - h) * 0.28
         tab = self.slide.shapes.add_table(
             len(rows) + 1, len(heads), I(self.x), I(y), I(self.w), I(h)
@@ -697,6 +773,8 @@ class Deck:
                 run = para.add_run()
                 run.text = str(value)
                 font(run, self.face, size, self.style[col], weight)
+        if p.get("caption"):
+            self.txt(p["caption"], self.x, 6.06, self.w, 0.54, 17, 12, "muted")
 
     def chart(self, p):
         heads, rows = self.sources.select(p)
@@ -803,6 +881,152 @@ class Deck:
             self.style["ink"],
         )
         self.txt(p["explanation"], self.x + 0.2, 5.10, self.w - 0.4, 1.02, 22, 15)
+
+    def dotplot(self, p):
+        """Stack equal measurements within each group. Each glyph remains editable."""
+        heads, rows = self.sources.select(p)
+        if len(heads) != 3 or len(rows) > 300:
+            raise ValueError("dotplot 需要组别和数值两列，每页最多展示 300 条记录")
+        groups = defaultdict(list)
+        for record, group, value in rows:
+            if not group.strip():
+                raise ValueError("dotplot 组别不能为空")
+            groups[group].append((record, number(value)))
+        if len(groups) > 4:
+            raise ValueError("dotplot 每页最多展示四组")
+        values = [v for group in groups.values() for _, v in group]
+        lo, hi = number(p.get("min", min(values))), number(p.get("max", max(values)))
+        if lo >= hi or min(values) < lo or max(values) > hi:
+            raise ValueError("dotplot 坐标范围需要包含全部观测值且 min 小于 max")
+        plot_x, plot_w = self.x + 2.18, self.w - 2.43
+        band = 3.60 / len(groups)
+        max_count = max(
+            max(Counter(v for _, v in group).values()) for group in groups.values()
+        )
+        distinct = sorted(set(values))
+        min_gap = min(
+            (distinct[i] - distinct[i - 1] for i in range(1, len(distinct))),
+            default=hi - lo,
+        )
+        diameter = min(
+            0.16, 0.88 * band / max_count, 0.94 * float(min_gap / (hi - lo)) * plot_w
+        )
+        if diameter < 0.045:
+            raise ValueError("当前投影尺寸无法区分各点，请细分组别或拆页")
+        self.txt(
+            p.get("axis_title", heads[2]), plot_x, 1.74, plot_w, 0.43, 14, 11, "muted"
+        )
+        for tick in range(5):
+            x = plot_x + plot_w * tick / 4
+            value = lo + (hi - lo) * tick / 4
+            self.rect(x, 2.25, 0.012, 3.60, "line")
+            self.txt(
+                format(value.normalize(), "f"),
+                x - 0.29,
+                5.92,
+                0.58,
+                0.32,
+                13,
+                9,
+                "muted",
+                align=PP_ALIGN.CENTER,
+            )
+        for idx, (group, records) in enumerate(groups.items()):
+            baseline = 2.25 + (idx + 1) * band - 0.10
+            self.txt(
+                group, self.x, baseline - 0.48, 1.94, 0.46, 21, 12, "ink", True, True
+            )
+            self.rect(plot_x, baseline, plot_w, 0.014, "line")
+            counts = Counter()
+            for record, value in records:
+                dx = plot_x + plot_w * float((value - lo) / (hi - lo))
+                dy = baseline - (counts[value] + 1) * diameter
+                counts[value] += 1
+                dot = self.slide.shapes.add_shape(
+                    MSO_SHAPE.OVAL,
+                    I(dx - diameter / 2),
+                    I(dy),
+                    I(diameter),
+                    I(diameter),
+                )
+                dot.name = f"{record} · {group} · {value}"
+                dot.fill.solid()
+                dot.fill.fore_color.rgb = rgb(self.style["accent"])
+                dot.line.fill.background()
+                for effect in dot._element.xpath("./p:style/a:effectRef"):
+                    effect.set("idx", "0")
+        if p.get("caption"):
+            self.txt(p["caption"], self.x, 6.32, self.w, 0.36, 14, 10, "muted")
+
+    def unitgrid(self, p):
+        heads, rows = self.sources.select(p)
+        required(p, ["legend"])
+        if len(heads) != 3 or len(rows) != 2:
+            raise ValueError("unitgrid 需要选择两行，以及命中数、总数两列")
+        pairs = [(number(hit), number(total)) for _, hit, total in rows]
+        if (
+            any(
+                hit % 1 or total % 1 or not 0 <= hit <= total <= 100 or total < 1
+                for hit, total in pairs
+            )
+            or pairs[0][1] != pairs[1][1]
+        ):
+            raise ValueError("unitgrid 比较相同分母的两组整数计数，分母须在 1–100 之间")
+        panel = (self.w - 0.68) / 2
+        total = int(pairs[0][1])
+        across = min(total, 10)
+        down = math.ceil(total / across)
+        pitch = min((panel - 0.32) / across, 2.64 / down, 0.44)
+        column_pitch = min(panel / across, 0.65)
+        for idx, ((label, _, _), (hit, _)) in enumerate(zip(rows, pairs)):
+            x = self.x + idx * (panel + 0.68)
+            tone = "accent" if idx else "muted"
+            self.rect(x, 1.99, panel, 0.02, "line")
+            self.txt(label, x, 2.16, panel * 0.45, 0.62, 20, 14, tone, True)
+            self.txt(
+                f"{int(hit)} / {total}",
+                x + panel * 0.45,
+                2.08,
+                panel * 0.55,
+                0.92,
+                34,
+                18,
+                tone,
+                True,
+                align=PP_ALIGN.RIGHT,
+            )
+            for cell in range(total):
+                box = self.rect(
+                    x + cell % across * column_pitch,
+                    3.12 + cell // across * pitch,
+                    column_pitch * 0.85,
+                    pitch * 0.81,
+                    tone if cell < hit else "line",
+                )
+                box.name = f"{label} · {cell + 1}"
+        self.txt(p["legend"], self.x, 6.08, self.w, 0.56, 17, 12, "ink")
+
+    def spotlight(self, p):
+        required(p, ["value", "label", "heading", "text"])
+        panel = self.w * 0.49
+        self.rect(self.x, 2.03, panel, 4.23, "hero")
+        self.txt(p["label"], self.x + 0.34, 2.38, panel - 0.68, 0.64, 17, 12, "onhero")
+        self.txt(
+            p["value"],
+            self.x + 0.34,
+            3.47,
+            panel - 0.68,
+            1.75,
+            58,
+            25,
+            "onhero",
+            True,
+            True,
+        )
+        x, w = self.x + panel + 0.46, self.w - panel - 0.52
+        self.txt(p["heading"], x, 2.43, w, 1.32, 32, 19, "ink", True, True)
+        self.rect(x, 3.91, w, 0.022, "line")
+        self.txt(p["text"], x, 4.13, w, 1.89, 23, 14, "muted")
 
     def decision(self, p):
         required(p, ["takeaway", "items"])

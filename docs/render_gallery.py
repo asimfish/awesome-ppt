@@ -30,52 +30,37 @@ def slide_image(pdf_path, index, width):
         return Image.frombytes("RGB", (pixmap.width, pixmap.height), pixmap.samples)
 
 
-def render(fonts):
+def render_showcase(fonts):
     def font(name, size):
         return ImageFont.truetype(str(fonts / (name + ".ttf")), size)
 
-    cream, ink, green = "#F5F2E9", "#173A37", "#0E5950"
-    hero = Image.new("RGB", (1600, 640), cream)
+    paper, ink, muted = "#F3F2EC", "#192D2B", "#415653"
+    hero = Image.new("RGB", (1600, 690), paper)
     draw = ImageDraw.Draw(hero)
-    draw.rectangle((0, 0, 600, 639), fill=ink)
-    draw.line((65, 104, 529, 104), fill="#729087", width=2)
-    draw.text(
-        (62, 59),
-        "RESEARCH PRESENTATIONS",
-        font=font("DejaVuSansMono", 24),
-        fill="#ACCDC1",
-    )
-    draw.text((58, 178), "CiteSlide", font=font("DejaVuSerif", 103), fill="#FCF9EE")
+    draw.text((49, 22), "AwesomePPT", font=font("DejaVuSans-Bold", 86), fill=ink)
     draw.multiline_text(
-        (66, 337),
-        "From source data to an\neditable PowerPoint talk.",
-        font=font("DejaVuSans", 33),
-        spacing=12,
-        fill="#D6E6DC",
+        (1010, 41),
+        "Editable academic talks\nand project reviews",
+        font=font("DejaVuSans", 35),
+        spacing=5,
+        fill=ink,
     )
-    draw.line((65, 530, 529, 530), fill="#729087", width=2)
-    draw.text(
-        (65, 556),
-        "AGENT SKILL  /  RESEARCH-DECK",
-        font=font("DejaVuSansMono", 20),
-        fill="#ACCDC1",
-    )
-    shot = slide_image(DECKS / "iris.pdf", 2, 840)
-    draw.text(
-        (677, 40), "FIG. 01   /   UCI IRIS", font=font("DejaVuSansMono", 23), fill=green
-    )
-    hero.paste(shot, (677, 91))
-    draw.rectangle(
-        (676, 90, 677 + shot.width, 91 + shot.height), outline="#BAC8BA", width=2
-    )
-    draw.text(
-        (677, 586),
-        "Rendered from the editable example deck",
-        font=font("DejaVuSans", 22),
-        fill="#37564F",
-    )
-    hero.save(MEDIA / "citeslide.png", optimize=True)
+    draw.line((54, 153, 1546, 153), fill="#B7C3B9", width=2)
+    for x, stem, label in (
+        (54, "iris", "RESEARCH TALK  /  UCI IRIS"),
+        (818, "project-review", "PROJECT REVIEW  /  ARCHIVE SEARCH"),
+    ):
+        shot = slide_image(DECKS / (stem + ".pdf"), 0, 728)
+        hero.paste(shot, (x, 185))
+        draw.rectangle(
+            (x - 1, 184, x + shot.width, 185 + shot.height), outline="#C0C8C0", width=1
+        )
+        draw.text((x, 620), label, font=font("DejaVuSansMono", 21), fill=muted)
+    hero.save(MEDIA / "awesome-ppt.png", optimize=True)
 
+
+def render(fonts):
+    render_showcase(fonts)
     render_grid(fonts, MODES, "modes.png")
     render_grid(
         fonts,

@@ -1,22 +1,25 @@
-# CiteSlide · 引页
+# AwesomePPT
 
-[![CiteSlide and an actual result slide from the UCI Iris example](docs/media/citeslide.png)](docs/decks/iris.pdf)
+[![Actual covers from the academic talk and Chinese project review](docs/media/awesome-ppt.png)](docs/gallery.md)
 
-**English** · [简体中文](README.zh-CN.md)　|　[Sample talk](docs/decks/iris.pdf) · [Template gallery](docs/gallery.md) · [Agent skill](research-deck/SKILL.md) · [Verification](https://github.com/asimfish/citeslide-skill/actions/workflows/verify.yml)
+**English** · [简体中文](README.zh-CN.md)　|　[Sample talk](docs/decks/iris.pdf) · [Template gallery](docs/gallery.md) · [Agent skill](research-deck/SKILL.md) · [Verification](https://github.com/asimfish/awesome-ppt/actions/workflows/verify.yml)
 
-CiteSlide turns research notes, papers and project records into editable PowerPoint talks. Give your agent a brief and your sources. It writes a slide plan, links quantitative claims to named rows and columns, and renders a deck with native charts, tables and speaker notes. The renderer runs locally.
+AwesomePPT turns research notes, papers and project records into editable PowerPoint talks. Give your agent a brief and your sources. It writes a slide plan, links quantitative claims to named rows and columns, and renders a deck with native charts, tables and speaker notes. The renderer runs locally.
+
+## Open the decks
+
+| Presentation | What to look for | Files |
+|---|---|---|
+| Research talk · How long is an iris petal? | A botanical plate opens the talk. A dot plot shows all 150 plants before the means and overlapping ranges are compared. | [Editable PPTX](docs/decks/iris.pptx) · [PDF](docs/decks/iris.pdf) · [Sources](examples/iris/SOURCE.md) |
+| Project review · Is archive search ready for a pilot? | A Chinese quarterly review opens with three deliveries and one unresolved check. Paired grids show the results of 80 replay tasks. The closing slide names the decision, owner and evidence required. The project records are illustrative. | [Editable PPTX](docs/decks/project-review.pptx) · [PDF](docs/decks/project-review.pdf) · [Slide plan and ledger](examples/project-review) |
 
 ## Built to extend GPT-6.2 Astra’s slide workflow
 
-OpenAI’s release highlights how GPT-6.2 Astra designs slides and follows the layout, colors and typography of a supplied file or screenshot. CiteSlide brings reusable institutional templates, row-level data binding, native PowerPoint objects and rendered checks to that workflow. For a quarterly review, give Astra last quarter’s deck and this quarter’s records, then invoke `$research-deck` to preserve the roadmap and attach the evidence to each changed milestone. The renderer also works from a JSON plan with no model connection. [OpenAI release](https://openai.com/index/introducing-gpt-6-2-astra-sol/)
+OpenAI’s release highlights how GPT-6.2 Astra designs slides and follows the layout, colors and typography of a supplied file or screenshot. AwesomePPT brings reusable institutional templates, row-level data binding, native PowerPoint objects and rendered checks to that workflow. For a quarterly review, give Astra last quarter’s deck and this quarter’s records, then invoke `$research-deck` to preserve the roadmap and attach the evidence to each changed milestone. The renderer also works from a JSON plan with no model connection. [OpenAI release](https://openai.com/index/introducing-gpt-6-2-astra-sol/)
 
 ## University templates
 
 Start with a nine-slide SJTU-style development review or a seven-slide Beijing Zhongguancun Academy-style quarterly defense. The institution catalog covers nine universities and academies, with official resource links and a local import path for your own PowerPoint masters. [Campus gallery and downloads](docs/campuses.md)
-
-## Open a real talk
-
-In the five-slide Iris talk, the result slide says that virginica petals average **5.55 cm**. The bar, headline and notes refer to the same summary table. The next slide shows why group means alone cannot separate individual plants. Open the PPTX and select the chart to edit its data. [Editable talk](docs/decks/iris.pptx) · [PDF preview](docs/decks/iris.pdf) · [Slide plan](examples/iris/deck.json) · [Data and attribution](examples/iris/SOURCE.md)
 
 ## Build your first deck
 
@@ -43,7 +46,7 @@ For a project review, provide the requirements and the test ledger. The acceptan
 
 [![Six rendered slides showing the different modes and styles](docs/media/modes.png)](docs/gallery.md)
 
-Pick a mode for the audience's question and a style for the room. Six narrative modes and six general visual styles can be combined. There are two additional campus treatments. The Chinese starters are complete worked examples. The Iris talk is an English example.
+Pick a mode for the audience's question and a style for the room. Six narrative modes and eight general visual styles can be combined. There are two additional campus treatments. The Chinese starters are complete worked examples. The Iris talk is an English example.
 
 ```sh
 python research-deck/scripts/deck.py starter acceptance review-work --style review

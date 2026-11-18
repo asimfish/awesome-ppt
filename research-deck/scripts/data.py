@@ -162,8 +162,11 @@ class Sources:
             return obj
 
         resolved = walk(page)
-        if page["layout"] in ("table", "chart"):
+        if page["layout"] in ("table", "chart", "dotplot", "unitgrid"):
             citations.append(self.tables[page["dataset"]][0]["source"])
+        if resolved.get("plate"):
+            required(resolved["plate"], ["source"])
+            citations.append(resolved["plate"]["source"])
         if resolved.get("source"):
             citations.insert(0, resolved["source"])
         resolved["citations"] = list(dict.fromkeys(citations))

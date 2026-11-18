@@ -1,22 +1,25 @@
-# CiteSlide · 引页
+# AwesomePPT
 
-[![CiteSlide 与鸢尾花样稿的真实结果页](docs/media/citeslide.png)](docs/decks/iris.pdf)
+[![学术短讲与中文项目评审的实物封面](docs/media/awesome-ppt.png)](docs/gallery.md)
 
-[English](README.md) · **简体中文**　|　[查看样稿](docs/decks/iris.pdf) · [模板图册](docs/gallery.md) · [Skill 入口](research-deck/SKILL.md) · [持续集成](https://github.com/asimfish/citeslide-skill/actions/workflows/verify.yml)
+[English](README.md) · **简体中文**　|　[查看样稿](docs/decks/iris.pdf) · [模板图册](docs/gallery.md) · [Skill 入口](research-deck/SKILL.md) · [持续集成](https://github.com/asimfish/awesome-ppt/actions/workflows/verify.yml)
 
-CiteSlide 帮你把论文、实验数据和项目记录讲成一份可编辑的 PowerPoint。向智能体说明听众、时间和材料，它会编排逐页主线，把定量结论绑定到具体数据行列，并写好讲者备注。PPTX 在本地生成。
+AwesomePPT 帮你把论文、实验数据和项目记录讲成一份可编辑的 PowerPoint。向智能体说明听众、时间和材料，它会编排逐页主线，把定量结论绑定到具体数据行列，并写好讲者备注。PPTX 在本地生成。
+
+## 先看成稿
+
+| 场合 | 打开后可以看什么 | 文件 |
+|---|---|---|
+| 学术短讲 · 鸢尾花的花瓣有多长？ | 博物图版引入研究对象。逐株点图展示 150 次测量，均值图和取值范围解释为什么两个物种仍会重叠。 | [可编辑 PPTX](docs/decks/iris.pptx) · [PDF](docs/decks/iris.pdf) · [原始材料](examples/iris/SOURCE.md) |
+| 中文项目评审 · 馆藏检索准备好试点了吗？ | 首页交代 3 项交付和 1 项待验证。两个方格图比较同一批 80 个查询任务，末页给出待批准的演练窗口、负责人和回执。使用教学模拟数据。 | [可编辑 PPTX](docs/decks/project-review.pptx) · [PDF](docs/decks/project-review.pdf) · [逐页稿与台账](examples/project-review) |
 
 ## 对 GPT-6.2 Astra 幻灯片工作流的增强
 
-OpenAI 在 GPT-6.2 Astra 发布说明中专门展示了幻灯片设计，以及从原文件或截图跟随布局、配色和字体的能力。CiteSlide 在这条工作流上补充高校场合模板、按行列绑定的数据、原生 PowerPoint 对象和渲染核验。例如，交给 Astra 上季答辩稿和本季台账，再调用 `$research-deck`，就能沿用同一张路线图，同时给变化的节点附上证据。已有逐页 JSON 时也可以直接本地构建。[OpenAI 官方发布说明](https://openai.com/zh-Hans-CN/index/introducing-gpt-6-2-astra-sol/)
+OpenAI 在 GPT-6.2 Astra 发布说明中专门展示了幻灯片设计，以及从原文件或截图跟随布局、配色和字体的能力。AwesomePPT 在这条工作流上补充高校场合模板、按行列绑定的数据、原生 PowerPoint 对象和渲染核验。例如，交给 Astra 上季答辩稿和本季台账，再调用 `$research-deck`，就能沿用同一张路线图，同时给变化的节点附上证据。已有逐页 JSON 时也可以直接本地构建。[OpenAI 官方发布说明](https://openai.com/zh-Hans-CN/index/introducing-gpt-6-2-astra-sol/)
 
 ## 高校与院校模板
 
 上海交通大学研制总结有九页专用起稿，北京中关村学院季度答辩有七页专用起稿。目录共收录九所高校与院校，支持从校方获取模板并在本地导入原生 PPTX。[高校图册、样稿与校方入口](docs/campuses.md)
-
-## 先打开一份真实样稿
-
-五页的鸢尾花短讲用 UCI 的 150 条测量记录回答一个问题：三种鸢尾花的花瓣长度有何差异？结果页上，Virginica 的平均花瓣长度为 **5.55 厘米**。图柱、标题和旁注读自同一份汇总表；翻到下一页，可以看到其中两个物种的实际取值范围仍有重叠。在 PowerPoint 中点选图表即可编辑数据。[可编辑 PPTX](docs/decks/iris.pptx) · [PDF 预览](docs/decks/iris.pdf) · [逐页稿](examples/iris/deck.json) · [原始数据与出处](examples/iris/SOURCE.md)
 
 ## 在本机生成第一份 PPT
 
@@ -43,7 +46,7 @@ python research-deck/scripts/deck.py build examples/iris/deck.json out/iris.pptx
 
 [![文献组会、会议短讲、答辩、推进会、验收、项目演示的真实渲染页](docs/media/modes.png)](docs/gallery.md)
 
-六种汇报模式分别编排问题、证据和收束方式，六种通用视觉风格可以自由搭配，另外提供两种院校场合专用风格。内置起稿提供完整中文案例，鸢尾花短讲提供英文案例。
+六种汇报模式分别编排问题、证据和收束方式，八种通用视觉风格可以自由搭配，另外提供两种院校场合专用风格。内置起稿提供完整中文案例，鸢尾花短讲提供英文案例。
 
 ```sh
 python research-deck/scripts/deck.py starter acceptance review-work --style review

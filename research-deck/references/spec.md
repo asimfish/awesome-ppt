@@ -29,6 +29,11 @@
 | table | 结果对照、里程碑、逐项验收 | dataset、columns；可设 rows、widths（含行键列）、highlight（行键），或 highlight_where（按所示列的 column、equals 匹配状态）。每页最多 9 行数据、6 列 |
 | equation | 可编辑公式与符号解释 | latex 为不含美元定界符的单行表达式，另需 explanation、source。通过 Pandoc 生成 Office Math，附同一公式的透明位图用于兼容预览 |
 | decision | 总结、局限、待决事项 | takeaway；items 为 1–3 条行动或问题 |
+| dotplot | 个体分布与相同观测值的次数 | dataset、columns 依次选组别和数值。每个唯一行键对应一个可编辑的点，重复的数值纵向堆叠。可选 rows、axis_title、caption、min、max。支持 1–4 组，每页最多 300 条 |
+| unitgrid | 两次测量在相同总数下的变化 | dataset、rows 两行、columns 依次选命中数和总数、legend。总数必须相同且为 1–100 的整数。格子按计数填充，格子位置只表示数量 |
+| spotlight | 结尾的关键区间、资源或决策 | value 和 label 放在色块中，heading 和 text 说明含义、责任人或下一步 |
+
+封面可以用分栏构图。学术图版在 cover 页增加 `plate`，含 file、alt、caption、source。PDF 图版另需 pdf_page 和 crop。指标封面使用 `metrics`，传入 2–3 组 label 和 value，可在 value 中绑定 `{{fact}}`。图版、指标组和单位 stationery 各有独立构图。表格可用 caption 点出最重要的一行。
 
 ### 图表和文本共用一份数据
 

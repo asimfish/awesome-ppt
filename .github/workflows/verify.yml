@@ -1,4 +1,4 @@
-name: Verify CiteSlide
+name: Verify AwesomePPT
 on:
   push:
   pull_request:

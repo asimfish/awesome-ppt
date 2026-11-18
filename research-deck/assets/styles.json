@@ -6,5 +6,7 @@
   "review":{"name":"正式项目评审","treatment":"register","paper":"FCFDFF","ink":"192D42","muted":"465C71","accent":"355D86","panel":"EAF0F6","line":"B3C4D4","hero":"20374D","onhero":"FFFFFF","dark":false},
   "stage":{"name":"深色演示","treatment":"stage","paper":"13262E","ink":"F2F8F6","muted":"BDD1CE","accent":"67DABB","panel":"1D3942","line":"497078","hero":"10242C","onhero":"F2F8F6","dark":true},
   "development":{"name":"研制评审 · 靛蓝与朱红","treatment":"development","paper":"FFFFFF","ink":"263650","muted":"576479","accent":"9D1838","panel":"F0F3F8","line":"CAD0DF","hero":"304370","onhero":"FFFFFF","dark":false},
-  "quarterly":{"name":"季度答辩 · 蓝色通栏","treatment":"quarterly","paper":"FFFFFF","ink":"193359","muted":"4D6279","accent":"20519A","panel":"EEF4FB","line":"B8C9DF","hero":"174988","onhero":"FFFFFF","dark":false}
+  "quarterly":{"name":"季度答辩 · 蓝色通栏","treatment":"quarterly","paper":"FFFFFF","ink":"193359","muted":"4D6279","accent":"20519A","panel":"EEF4FB","line":"B8C9DF","hero":"174988","onhero":"FFFFFF","dark":false},
+  "herbarium":{"name":"博物图谱","treatment":"atlas","paper":"F8F5EB","ink":"243B31","muted":"54665B","accent":"3E6552","panel":"E5EBDD","line":"C0CBBA","hero":"233E34","onhero":"F9F4E7","dark":false},
+  "briefing":{"name":"季度决策简报","treatment":"briefing","paper":"F8F9F6","ink":"172E43","muted":"485E70","accent":"2252B6","panel":"E5ECF7","line":"BFCADA","hero":"152D49","onhero":"F4F7FC","dark":false}
 }

@@ -1,4 +1,4 @@
-# Contributing to CiteSlide
+# Contributing to AwesomePPT
 
 Start with the [quick start](README.md#build-your-first-deck) and the [editable examples](docs/gallery.md). Issues and pull requests are welcome in English or Chinese.
 
@@ -17,7 +17,7 @@ python research-deck/evals/test_deck.py
 python .github/check_showcase.py
 ```
 
-When a starter changes, rebuild its shipped PPTX. When the showcased talk changes, rebuild its PPTX and PDF. Re-render the README images for changes that affect the illustrated pages.
+When a starter changes, rebuild its shipped PPTX. When either showcased talk changes, rebuild its PPTX and PDF. Re-render the README images for changes that affect the illustrated pages.
 
 ```sh
 python research-deck/scripts/deck.py build research-deck/assets/starters/acceptance.json docs/decks/acceptance.pptx --replace

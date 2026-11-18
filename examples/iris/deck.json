@@ -1,14 +1,19 @@
 {
   "mode": "conference",
-  "style": "evidence",
+  "style": "herbarium",
   "language": "en",
-  "title": "Petal length across three iris species",
-  "presenter": "CiteSlide",
+  "title": "How long is an iris petal?",
+  "presenter": "AwesomePPT",
   "datasets": {
     "iris": {
       "file": "summary.csv",
       "key": "Species",
       "source": "R. Fisher · UCI Iris · petal length · DOI 10.24432/C56C76"
+    },
+    "specimens": {
+      "file": "observations.csv",
+      "key": "Specimen",
+      "source": "R. Fisher · UCI Iris · 150 specimens · DOI 10.24432/C56C76"
     }
   },
   "facts": {
@@ -31,8 +36,7 @@
       "dataset": "iris",
       "row": "Virginica",
       "column": "Minimum (cm)",
-      "decimals": 1,
-      "unit": " cm"
+      "decimals": 1
     },
     "overlap_end": {
       "dataset": "iris",
@@ -46,31 +50,30 @@
     {
       "layout": "cover",
       "eyebrow": "BOTANICAL MEASUREMENTS",
-      "title": "Petal length across three iris species",
-      "subtitle": "A short talk using 150 observations from the UCI Iris dataset.",
-      "credit": "CiteSlide  /  Research example",
-      "notes": "Fisher, R. (1936). Iris [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C56C76. Dataset licensed CC BY 4.0. This deck uses the bezdekIris.data file and calculates descriptive summaries."
+      "title": "How long is\nan iris petal?",
+      "subtitle": "Three species, 150 plants and the limits of a single measurement.",
+      "credit": "AwesomePPT   /   Research talk",
+      "notes": "Fisher, R. (1936). Iris [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C56C76. Dataset licensed CC BY 4.0. This deck uses the bezdekIris.data file and calculates descriptive summaries.",
+      "plate": {
+        "file": "plate-21.jpg",
+        "alt": "James Sowerby’s botanical plate of Iris versicolor in flower.",
+        "caption": "Iris versicolor   /   Curtis, The Botanical Magazine, pl. 21",
+        "source": "J. Sowerby · The Botanical Magazine, vol. I, pl. 21 · Project Gutenberg 17198"
+      }
     },
     {
-      "layout": "process",
-      "section": "Method",
-      "title": "Each plant contributes one petal-length measurement",
-      "steps": [
-        {
-          "heading": "Read the records",
-          "text": "Use the petal length in centimetres from all 150 rows."
-        },
-        {
-          "heading": "Group by species",
-          "text": "Setosa, versicolor and virginica each contribute 50 plants."
-        },
-        {
-          "heading": "Compare summaries",
-          "text": "Calculate a mean for each group, then inspect its observed range."
-        }
+      "layout": "dotplot",
+      "section": "The measurements",
+      "title": "Setosa petals form a distinct cluster",
+      "dataset": "specimens",
+      "columns": [
+        "Species",
+        "Petal length (cm)"
       ],
-      "source": "R. Fisher · UCI Iris · bezdekIris.data, columns 3 and 5",
-      "notes": "The input is a frozen copy of the file in the UCI archive. summarize.py uses decimal arithmetic and keeps three decimal places for the means."
+      "min": 0,
+      "max": 8,
+      "caption": "One dot per plant. Equal lengths stack vertically within each species.",
+      "notes": "Follow the horizontal axis first. There are 50 plants in each row. The amount of stacking shows how frequently each recorded length occurs."
     },
     {
       "layout": "chart",
@@ -95,8 +98,8 @@
     },
     {
       "layout": "table",
-      "section": "Variation",
-      "title": "The observed ranges overlap for two species",
+      "section": "The ranges",
+      "title": "Versicolor and virginica overlap in petal length",
       "dataset": "iris",
       "columns": [
         "Plants",
@@ -111,18 +114,18 @@
         1.2,
         1.2
       ],
-      "notes": "Versicolor ranges from 3.0 to 5.1 cm and virginica from 4.5 to 6.9 cm. The intervals overlap even though the means differ."
+      "notes": "Versicolor ranges from 3.0 to 5.1 cm and virginica from 4.5 to 6.9 cm. The intervals overlap even though the means differ.",
+      "caption": "Compare the minimum for virginica with the maximum for versicolor."
     },
     {
-      "layout": "decision",
+      "layout": "spotlight",
       "section": "Interpretation",
-      "title": "Mean petal length summarizes differences between groups",
-      "takeaway": "Versicolor and virginica share part of the observed range.",
-      "items": [
-        "Their ranges overlap from {{overlap_start}} to {{overlap_end}}.",
-        "A classification study could add petal width and evaluate held-out plants."
-      ],
-      "notes": "The overlap refers to the intervals between the observed extrema. The classification study is a suggested next experiment."
+      "title": "A single petal length can fit either species",
+      "value": "{{overlap_start}}–{{overlap_end}}",
+      "label": "Shared interval of the observed ranges",
+      "heading": "Where the ranges meet",
+      "text": "A measurement in this interval is compatible with both observed ranges. The next comparison should include petal width.",
+      "notes": "Range overlap does not imply identical frequencies or a classification error rate. The interval is computed from the virginica minimum and the versicolor maximum."
     }
   ]
 }
