@@ -1,0 +1,7 @@
+* text=auto
+*.csv text eol=lf
+*.pptx binary
+*.pdf binary
+*.png binary
+# Preserve the exact upstream bytes used by the example's source digest.
+examples/iris/bezdekIris.data -text -diff

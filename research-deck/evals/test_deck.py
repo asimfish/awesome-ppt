@@ -1,0 +1,160 @@
+"""Exercise data binding, starter generation, editability and safe output boundaries."""
+
+import json
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from zipfile import ZipFile
+
+from lxml import etree
+
+SKILL = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(SKILL / "scripts"))
+from data import Sources
+from native import fill, inventory, ordered_parts
+from render import Deck
+
+
+class DeckChecks(unittest.TestCase):
+    def setUp(self):
+        self.workspace = tempfile.TemporaryDirectory()
+        self.addCleanup(self.workspace.cleanup)
+        self.work = Path(self.workspace.name)
+
+    def cli(self, *args):
+        return subprocess.run(
+            [sys.executable, str(SKILL / "scripts/deck.py"), *map(str, args)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    def start(self, mode):
+        draft = self.work / mode
+        run = self.cli("starter", mode, draft)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        return draft, json.loads((draft / "deck.json").read_text())
+
+    def test_reordering_rows_preserves_named_facts_and_chart(self):
+        draft, spec = self.start("conference")
+        csv_path = draft / "results.csv"
+        lines = csv_path.read_text().splitlines()
+        csv_path.write_text("\n".join([lines[0], *reversed(lines[1:])]) + "\n")
+        out = draft / "talk.pptx"
+        Deck(spec, draft).build().save(out)
+        page = inventory(out)[3]
+        chart = next(obj for obj in page["objects"] if obj["kind"] == "chart")
+        series = chart["series"][0]
+        pairs = [
+            (c["value"], v["value"])
+            for c, v in zip(series["categories"], series["values"])
+        ]
+        self.assertEqual(
+            pairs, [("混合检索", "68.5"), ("向量检索", "55.5"), ("关键词", "42.0")]
+        )
+        labels = " ".join(
+            t for obj in page["objects"] for t in obj.get("paragraphs", [])
+        )
+        self.assertIn("68.5%", labels)
+        self.assertIn("13.0 个百分点", labels)
+        self.assertIn("results.csv", page["notes"])
+        with ZipFile(out) as z:
+            xml = etree.fromstring(z.read("ppt/charts/chart1.xml"))
+            self.assertEqual(
+                xml.xpath(
+                    '//*[local-name()="dLbls"]/*[local-name()="numFmt"]/@formatCode'
+                ),
+                ["0.0"],
+            )
+            self.assertTrue(any(f.endswith(".xlsx") for f in z.namelist()))
+
+    def test_acceptance_fails_for_missing_evidence_in_passing_row(self):
+        draft, spec = self.start("acceptance")
+        file = draft / "tests.csv"
+        file.write_text(
+            file.read_text().replace("待补演练记录,待验证", "待补演练记录,达到")
+        )
+        with self.assertRaisesRegex(ValueError, "T-03"):
+            Sources(spec, draft)
+        del spec["datasets"]["tests"]["evidence_rule"]
+        with self.assertRaisesRegex(ValueError, "T-03"):
+            Sources(spec, draft)
+
+    def test_status_count_and_highlight_follow_replaced_ledger(self):
+        draft, spec = self.start("acceptance")
+        (draft / "tests.csv").write_text(
+            "测试编号,要求,实测记录,证据位置,判定\nR1,成功率 ≥ 70%,72.5%,L1,达到\nR2,耗时 ≤ 20 min,无记录,待补日志,待验证\n"
+        )
+        out = draft / "report.pptx"
+        Deck(spec, draft).build().save(out)
+        result = json.dumps(inventory(out), ensure_ascii=False)
+        self.assertIn("1 项指标达到要求，1 项待验证", result)
+        self.assertIn("72.5%", result)
+        self.assertNotIn("T-03", result)
+        spec["slides"][4]["highlight"] = ["no-such-row"]
+        with self.assertRaisesRegex(ValueError, "no-such-row"):
+            Deck(spec, draft).build()
+
+    def test_wrong_keys_and_duplicate_csv_rows(self):
+        draft, spec = self.start("conference")
+        spec["facts"]["best"]["row"] = "未找到的方法"
+        with self.assertRaisesRegex(ValueError, "scores.*未找到的方法"):
+            Sources(spec, draft)
+        p = draft / "results.csv"
+        with p.open("a") as f:
+            f.write("关键词,91,92\n")
+        with self.assertRaisesRegex(ValueError, "重复"):
+            Sources(spec, draft)
+
+    def test_fill_preserves_unchanged_zip_parts_and_checks_expected_text(self):
+        draft, spec = self.start("acceptance")
+        original = draft / "old.pptx"
+        revised = draft / "new.pptx"
+        Deck(spec, draft).build().save(original)
+        tab = next(
+            obj for obj in inventory(original)[4]["objects"] if obj["kind"] == "table"
+        )
+        edit = {
+            "slide": 5,
+            "id": tab["id"],
+            "cell": [1, 0],
+            "expect": "T-01",
+            "text": "R1",
+        }
+        fill(original, [edit], revised)
+        result = next(
+            obj for obj in inventory(revised)[4]["objects"] if obj["kind"] == "table"
+        )
+        self.assertEqual(result["cells"][1][0], "R1")
+        with ZipFile(original) as before, ZipFile(revised) as after:
+            self.assertEqual(before.namelist(), after.namelist())
+            changed = [
+                name
+                for name in before.namelist()
+                if before.read(name) != after.read(name)
+            ]
+            self.assertEqual(changed, [ordered_parts(before)[4]])
+        with self.assertRaisesRegex(ValueError, "expect"):
+            fill(revised, [edit], draft / "failure.pptx")
+        self.assertFalse((draft / "failure.pptx").exists())
+
+    def test_output_protection_and_failed_build(self):
+        draft, spec = self.start("progress")
+        inp = draft / "deck.json"
+        out = draft / "report.pptx"
+        out.write_bytes(b"existing")
+        self.assertNotEqual(self.cli("build", inp, out).returncode, 0)
+        self.assertEqual(out.read_bytes(), b"existing")
+        spec["slides"][1]["title"] = "{{unknown_fact}}"
+        inp.write_text(json.dumps(spec))
+        run = self.cli("build", inp, out, "--replace")
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("unknown_fact", run.stderr)
+        self.assertEqual(out.read_bytes(), b"existing")
+        self.assertNotEqual(self.cli("starter", "progress", draft).returncode, 0)
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

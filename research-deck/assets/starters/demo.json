@@ -1,0 +1,107 @@
+{
+  "mode": "demo",
+  "language": "zh",
+  "title": "用档案旧称找回修缮记录",
+  "presenter": "教学模拟案例",
+  "datasets": {
+    "scores": {
+      "file": "results.csv",
+      "key": "方法",
+      "source": "教学模拟数据 · results.csv · 固定查询集"
+    }
+  },
+  "slides": [
+    {
+      "layout": "cover",
+      "section": "",
+      "title": "用档案旧称找回修缮记录",
+      "notes": "这是可替换的教学模拟案例。真实汇报请替换资料、数据来源和汇报人。",
+      "subtitle": "项目演示练习  /  从输入查询到核对原始档号",
+      "credit": "教学模拟案例  /  馆藏档案检索"
+    },
+    {
+      "layout": "argument",
+      "section": "场景",
+      "title": "资料员只有旧称和大致年代",
+      "notes": "把观众带进一次检索任务。",
+      "lead": "目标是找回一份有正式档号的记录。",
+      "points": [
+        "输入材料只写着「西馆旧址」。",
+        "选中候选后，要返回档案目录复核档号。"
+      ]
+    },
+    {
+      "layout": "process",
+      "section": "方法",
+      "title": "题名匹配与语义检索共同提供候选",
+      "notes": "用旧称检索一份档案，说明三步分别解决哪个问题。",
+      "steps": [
+        {
+          "heading": "文本准备",
+          "text": "保留档案编号、题名和年代。"
+        },
+        {
+          "heading": "两路召回",
+          "text": "按词项匹配和语义相似度分别召回。"
+        },
+        {
+          "heading": "结果排序",
+          "text": "合并同一档案，将候选按分数排列。"
+        }
+      ]
+    },
+    {
+      "layout": "figure",
+      "section": "演示",
+      "title": "从旧称查询进入候选档案",
+      "notes": "演示先看候选题名，再按年代与档号核对。替换为真实项目时使用已授权界面。",
+      "file": "demo-search.png",
+      "alt": "教学模拟界面中，西馆旧址修缮记录列在第一条。",
+      "source": "教学模拟案例 · 原创界面示意",
+      "caption": "输入「西馆旧址」，在第一条候选中核对题名、年代与档号。"
+    },
+    {
+      "layout": "chart",
+      "section": "结果",
+      "title": "混合检索的首条命中率达到 {{best}}",
+      "notes": "三个方法使用相同的模拟查询集。横轴是方法，纵轴是百分数。",
+      "dataset": "scores",
+      "columns": [
+        "首条命中率（%）"
+      ],
+      "axis_title": "首条命中率（%）",
+      "min": 0,
+      "max": 100,
+      "decimals": 1,
+      "reading": "比向量检索高 {{gain}}。"
+    },
+    {
+      "layout": "decision",
+      "section": "行动",
+      "title": "把演示延伸到资料员的真实查询",
+      "notes": "记录失败查询并保留人工核对环节。",
+      "takeaway": "下一步观察资料员能否独立完成核对。",
+      "items": [
+        "收集旧称和同名建筑的查询样本。",
+        "记录打开候选到找到正式档号所需的时间。"
+      ]
+    }
+  ],
+  "facts": {
+    "best": {
+      "dataset": "scores",
+      "row": "混合检索",
+      "column": "首条命中率（%）",
+      "decimals": 1,
+      "unit": "%"
+    },
+    "gain": {
+      "dataset": "scores",
+      "row": "混合检索",
+      "column": "首条命中率（%）",
+      "minus_row": "向量检索",
+      "decimals": 1,
+      "unit": " 个百分点"
+    }
+  }
+}

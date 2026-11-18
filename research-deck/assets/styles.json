@@ -1,0 +1,8 @@
+{
+  "evidence":{"name":"结论与证据","treatment":"rule","paper":"FFFFFF","ink":"152C39","muted":"435F6D","accent":"006F68","panel":"E9F4F1","line":"B4CFCA","hero":"123B3A","onhero":"FFFFFF","dark":false},
+  "editorial":{"name":"论文精读","treatment":"folio","paper":"FAF7EF","ink":"302821","muted":"635950","accent":"9D432D","panel":"F2E9DD","line":"CCBBAA","hero":"EEE5D6","onhero":"302821","dark":false},
+  "seminar":{"name":"学术讲堂","treatment":"band","paper":"F9FBFC","ink":"152D43","muted":"405D70","accent":"176E95","panel":"E8F1F5","line":"B8CBD5","hero":"132E46","onhero":"FFFFFF","dark":false},
+  "defense":{"name":"章节导航答辩","treatment":"rail","paper":"FFFFFF","ink":"22354D","muted":"4F6178","accent":"844148","panel":"EDF2F6","line":"BECCD9","hero":"172E49","onhero":"FFFFFF","dark":false},
+  "review":{"name":"正式项目评审","treatment":"register","paper":"FCFDFF","ink":"192D42","muted":"465C71","accent":"355D86","panel":"EAF0F6","line":"B3C4D4","hero":"20374D","onhero":"FFFFFF","dark":false},
+  "stage":{"name":"深色演示","treatment":"stage","paper":"13262E","ink":"F2F8F6","muted":"BDD1CE","accent":"67DABB","panel":"1D3942","line":"497078","hero":"10242C","onhero":"F2F8F6","dark":true}
+}

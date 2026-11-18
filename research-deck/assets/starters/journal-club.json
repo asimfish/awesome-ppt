@@ -1,0 +1,114 @@
+{
+  "mode": "journal-club",
+  "language": "zh",
+  "title": "馆藏检索的两种证据",
+  "presenter": "教学模拟案例",
+  "datasets": {
+    "scores": {
+      "file": "results.csv",
+      "key": "方法",
+      "source": "教学模拟数据 · results.csv · 固定查询集"
+    }
+  },
+  "slides": [
+    {
+      "layout": "cover",
+      "section": "",
+      "title": "馆藏检索的两种证据",
+      "notes": "这是可替换的教学模拟案例。真实汇报请替换资料、数据来源和汇报人。",
+      "subtitle": "文献精读练习  /  比较题名命中与排序质量",
+      "credit": "教学模拟案例  /  馆藏档案检索"
+    },
+    {
+      "layout": "contrast",
+      "section": "问题",
+      "title": "同一查询可以有两个评价目标",
+      "notes": "先明确用户会打开几条结果，再解释为什么选择两个指标。",
+      "left": {
+        "heading": "直接定位",
+        "text": "研究者只打开第一条，希望它就是目标档案。"
+      },
+      "right": {
+        "heading": "辅助发现",
+        "text": "资料员愿意浏览前三条，找到目标即可。"
+      }
+    },
+    {
+      "layout": "process",
+      "section": "方法",
+      "title": "题名匹配与语义检索共同提供候选",
+      "notes": "用旧称检索一份档案，说明三步分别解决哪个问题。",
+      "steps": [
+        {
+          "heading": "文本准备",
+          "text": "保留档案编号、题名和年代。"
+        },
+        {
+          "heading": "两路召回",
+          "text": "按词项匹配和语义相似度分别召回。"
+        },
+        {
+          "heading": "结果排序",
+          "text": "合并同一档案，将候选按分数排列。"
+        }
+      ]
+    },
+    {
+      "layout": "chart",
+      "section": "结果",
+      "title": "混合检索的首条命中率达到 {{best}}",
+      "notes": "三个方法使用相同的模拟查询集。横轴是方法，纵轴是百分数。",
+      "dataset": "scores",
+      "columns": [
+        "首条命中率（%）"
+      ],
+      "axis_title": "首条命中率（%）",
+      "min": 0,
+      "max": 100,
+      "decimals": 1,
+      "reading": "比向量检索高 {{gain}}。"
+    },
+    {
+      "layout": "table",
+      "section": "结果",
+      "title": "首条命中与前三条命中回答不同问题",
+      "notes": "首条指标对应直接打开第一份记录。前三条指标对应人工从候选中选择。",
+      "dataset": "scores",
+      "columns": [
+        "首条命中率（%）",
+        "前三条命中率（%）"
+      ],
+      "highlight": [
+        "混合检索"
+      ]
+    },
+    {
+      "layout": "decision",
+      "section": "讨论",
+      "title": "哪些查询仍需要人工判断？",
+      "notes": "引导听众提出可以推翻当前解释的证据。",
+      "takeaway": "现有模拟结果只覆盖固定查询集。",
+      "items": [
+        "下一轮按旧称、年份和同名条目分别报告。",
+        "讨论：补录的相关条目会如何改变指标？"
+      ]
+    }
+  ],
+  "facts": {
+    "best": {
+      "dataset": "scores",
+      "row": "混合检索",
+      "column": "首条命中率（%）",
+      "decimals": 1,
+      "unit": "%"
+    },
+    "gain": {
+      "dataset": "scores",
+      "row": "混合检索",
+      "column": "首条命中率（%）",
+      "minus_row": "向量检索",
+      "decimals": 1,
+      "unit": " 个百分点"
+    }
+  }
+}

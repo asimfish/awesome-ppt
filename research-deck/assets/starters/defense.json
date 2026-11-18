@@ -1,0 +1,97 @@
+{
+  "mode": "defense",
+  "language": "zh",
+  "title": "档案检索评价与方法设计",
+  "presenter": "教学模拟案例",
+  "datasets": {
+    "scores": {
+      "file": "results.csv",
+      "key": "方法",
+      "source": "教学模拟数据 · results.csv · 固定查询集"
+    }
+  },
+  "slides": [
+    {
+      "layout": "cover",
+      "section": "",
+      "title": "档案检索评价与方法设计",
+      "notes": "这是可替换的教学模拟案例。真实汇报请替换资料、数据来源和汇报人。",
+      "subtitle": "研究答辩练习  /  问题、方法、结果与贡献",
+      "credit": "教学模拟案例  /  馆藏档案检索"
+    },
+    {
+      "layout": "section",
+      "section": "评价",
+      "title": "如何判断一次检索成功？",
+      "notes": "界定评价单位后再讲方法。",
+      "subtitle": "按查询统计，保留目标档案编号。"
+    },
+    {
+      "layout": "equation",
+      "section": "评价",
+      "title": "首条命中率按查询计数",
+      "notes": "分子为首条命中的查询数，分母为全部查询数。",
+      "latex": "p=\\frac{s}{n}",
+      "explanation": "s 为首条命中的查询数，n 为查询总数；展示时换算为百分数。",
+      "source": "教学模拟案例 · 评价协议 §2"
+    },
+    {
+      "layout": "process",
+      "section": "方法",
+      "title": "题名匹配与语义检索共同提供候选",
+      "notes": "用旧称检索一份档案，说明三步分别解决哪个问题。",
+      "steps": [
+        {
+          "heading": "文本准备",
+          "text": "保留档案编号、题名和年代。"
+        },
+        {
+          "heading": "两路召回",
+          "text": "按词项匹配和语义相似度分别召回。"
+        },
+        {
+          "heading": "结果排序",
+          "text": "合并同一档案，将候选按分数排列。"
+        }
+      ]
+    },
+    {
+      "layout": "table",
+      "section": "结果",
+      "title": "首条命中与前三条命中回答不同问题",
+      "notes": "首条指标对应直接打开第一份记录。前三条指标对应人工从候选中选择。",
+      "dataset": "scores",
+      "columns": [
+        "首条命中率（%）",
+        "前三条命中率（%）"
+      ],
+      "highlight": [
+        "混合检索"
+      ]
+    },
+    {
+      "layout": "contrast",
+      "section": "贡献",
+      "title": "评价设计与系统实现由不同角色承担",
+      "notes": "真实答辩请逐项核对作者分工。",
+      "left": {
+        "heading": "报告人",
+        "text": "设计评价协议，复核查询标签，解释方法差异。"
+      },
+      "right": {
+        "heading": "协作者",
+        "text": "整理档案记录，维护索引和演示服务。"
+      }
+    },
+    {
+      "layout": "decision",
+      "section": "后续",
+      "title": "外部有效性需要新的查询集",
+      "notes": "答辩可准备完整数据表作为备份页。",
+      "takeaway": "固定馆藏上的排序收益有待外部复核。",
+      "items": [
+        "按馆藏来源与查询难度分层抽样。"
+      ]
+    }
+  ]
+}

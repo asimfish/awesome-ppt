@@ -1,0 +1,88 @@
+{
+  "mode": "progress",
+  "language": "zh",
+  "title": "馆藏检索试点进展",
+  "presenter": "教学模拟案例",
+  "datasets": {
+    "progress": {
+      "file": "milestones.csv",
+      "key": "交付物",
+      "source": "教学模拟项目周报 · milestones.csv"
+    }
+  },
+  "slides": [
+    {
+      "layout": "cover",
+      "section": "",
+      "title": "馆藏检索试点进展",
+      "notes": "这是可替换的教学模拟案例。真实汇报请替换资料、数据来源和汇报人。",
+      "subtitle": "第 4 周项目推进会  /  索引已交测试，恢复演练待排期",
+      "credit": "教学模拟案例  /  馆藏档案检索"
+    },
+    {
+      "layout": "process",
+      "section": "路线",
+      "title": "本期推进到离线联调",
+      "notes": "按同一套节点名称回顾上次承诺。",
+      "steps": [
+        {
+          "heading": "整理样本",
+          "text": "明确题名、年代和档号。"
+        },
+        {
+          "heading": "构建索引",
+          "text": "冻结输入，生成可复查版本。"
+        },
+        {
+          "heading": "联调与恢复",
+          "text": "核对查询链路，安排恢复窗口。"
+        }
+      ]
+    },
+    {
+      "layout": "table",
+      "section": "交付证据",
+      "title": "三项交付物均有负责人和下一检查点",
+      "notes": "本期交付只覆盖模拟离线场景，恢复演练依赖可用窗口。",
+      "dataset": "progress",
+      "columns": [
+        "上期",
+        "本期",
+        "负责人",
+        "下一检查点"
+      ],
+      "widths": [
+        1.2,
+        1,
+        1.2,
+        0.9,
+        1.35
+      ]
+    },
+    {
+      "layout": "contrast",
+      "section": "依赖",
+      "title": "下一次联调有两项前置条件",
+      "notes": "请负责人在会末确认交付时间。",
+      "left": {
+        "heading": "资料组",
+        "text": "第 5 周确认抽样名单，冻结题名映射。"
+      },
+      "right": {
+        "heading": "运维组",
+        "text": "第 5 周协调演练时段，登记恢复负责人。"
+      }
+    },
+    {
+      "layout": "decision",
+      "section": "行动",
+      "title": "本次会议需要确定恢复窗口",
+      "notes": "让负责人口头确认，再记入会议纪要。",
+      "takeaway": "确认第 6 周可用窗口与值班人员。",
+      "items": [
+        "运维组在第 5 周提交候选时段。",
+        "检索组在联调前提供可重建的索引快照。"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+# The authoring workspace also holds private research material. Track release roots only.
+/*
+!/.gitignore
+!/.gitattributes
+!/README.md
+!/README.zh-CN.md
+!/LICENSE
+!/CONTRIBUTING.md
+!/NOTICE.md
+!/.github/
+!/.agents/
+!/research-deck/
+!/docs/
+!/examples/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/research-deck
+**/.DS_Store
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.ruff_cache/
+**/.venv/
+**/.env

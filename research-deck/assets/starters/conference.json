@@ -1,0 +1,96 @@
+{
+  "mode": "conference",
+  "language": "zh",
+  "title": "让旧称找到正确的档案",
+  "presenter": "教学模拟案例",
+  "datasets": {
+    "scores": {
+      "file": "results.csv",
+      "key": "方法",
+      "source": "教学模拟数据 · results.csv · 固定查询集"
+    }
+  },
+  "slides": [
+    {
+      "layout": "cover",
+      "section": "",
+      "title": "让旧称找到正确的档案",
+      "notes": "这是可替换的教学模拟案例。真实汇报请替换资料、数据来源和汇报人。",
+      "subtitle": "会议短讲练习  /  从一个问题讲到一项结果",
+      "credit": "教学模拟案例  /  馆藏档案检索"
+    },
+    {
+      "layout": "argument",
+      "section": "问题",
+      "title": "题名改变后，旧称查询很难直接定位",
+      "notes": "以一次具体查找开场，再介绍评价标准。",
+      "lead": "如何让目标档案排在第一条？",
+      "points": [
+        "词项匹配容易错过别名和改称。",
+        "单独依赖语义相似度会混入近义主题。"
+      ]
+    },
+    {
+      "layout": "process",
+      "section": "方法",
+      "title": "题名匹配与语义检索共同提供候选",
+      "notes": "用旧称检索一份档案，说明三步分别解决哪个问题。",
+      "steps": [
+        {
+          "heading": "文本准备",
+          "text": "保留档案编号、题名和年代。"
+        },
+        {
+          "heading": "两路召回",
+          "text": "按词项匹配和语义相似度分别召回。"
+        },
+        {
+          "heading": "结果排序",
+          "text": "合并同一档案，将候选按分数排列。"
+        }
+      ]
+    },
+    {
+      "layout": "chart",
+      "section": "结果",
+      "title": "混合检索的首条命中率达到 {{best}}",
+      "notes": "三个方法使用相同的模拟查询集。横轴是方法，纵轴是百分数。",
+      "dataset": "scores",
+      "columns": [
+        "首条命中率（%）"
+      ],
+      "axis_title": "首条命中率（%）",
+      "min": 0,
+      "max": 100,
+      "decimals": 1,
+      "reading": "比向量检索高 {{gain}}。"
+    },
+    {
+      "layout": "decision",
+      "section": "结论",
+      "title": "下一轮应检验跨馆藏的可迁移性",
+      "notes": "用一句话重述发现，再指出可执行的验证。",
+      "takeaway": "固定查询集上，两路候选提升首条命中率。",
+      "items": [
+        "把别名词典冻结，在另一馆藏上独立测试。"
+      ]
+    }
+  ],
+  "facts": {
+    "best": {
+      "dataset": "scores",
+      "row": "混合检索",
+      "column": "首条命中率（%）",
+      "decimals": 1,
+      "unit": "%"
+    },
+    "gain": {
+      "dataset": "scores",
+      "row": "混合检索",
+      "column": "首条命中率（%）",
+      "minus_row": "向量检索",
+      "decimals": 1,
+      "unit": " 个百分点"
+    }
+  }
+}

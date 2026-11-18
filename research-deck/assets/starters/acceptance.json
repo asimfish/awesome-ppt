@@ -1,0 +1,124 @@
+{
+  "mode": "acceptance",
+  "language": "zh",
+  "title": "馆藏检索试点研制总结",
+  "presenter": "教学模拟案例",
+  "datasets": {
+    "tests": {
+      "file": "tests.csv",
+      "key": "测试编号",
+      "source": "教学模拟验收台账 · tests.csv",
+      "evidence_rule": {
+        "status": "判定",
+        "measured": "实测记录",
+        "record": "证据位置"
+      }
+    }
+  },
+  "slides": [
+    {
+      "layout": "cover",
+      "section": "",
+      "title": "馆藏检索试点研制总结",
+      "notes": "这是可替换的教学模拟案例。真实汇报请替换资料、数据来源和汇报人。",
+      "subtitle": "验收范围、逐项判定和遗留记录",
+      "credit": "教学模拟案例  /  馆藏档案检索"
+    },
+    {
+      "layout": "argument",
+      "section": "范围",
+      "title": "以逐项需求和记录界定验收范围",
+      "notes": "填写当前项目的任务书版本、交付边界与已知约束。",
+      "lead": "先给每项要求找到可复核的测试记录。",
+      "points": [
+        "从任务书摘录要求、单位和适用条件。",
+        "在台账中登记对应测试编号、实测值与证据位置。"
+      ]
+    },
+    {
+      "layout": "process",
+      "section": "研制过程",
+      "title": "从研制交付到验收判定",
+      "notes": "汇报时用原始资料中的实际版本和日期替换通用流程。",
+      "steps": [
+        {
+          "heading": "界定范围",
+          "text": "将任务书条款对应到测试编号。"
+        },
+        {
+          "heading": "定位交付物",
+          "text": "列出待验收版本与相应的交付记录。"
+        },
+        {
+          "heading": "形成判定",
+          "text": "核对实测与要求，保留仍缺证据的事项。"
+        }
+      ]
+    },
+    {
+      "layout": "contrast",
+      "section": "测试条件",
+      "title": "测试口径与环境应能从记录复核",
+      "notes": "这页是复核方法。实际报告应替换成已提供的条件或缩成备注。",
+      "left": {
+        "heading": "测试口径",
+        "text": "核对目标、单位和采样范围。结果表引用对应测试编号。"
+      },
+      "right": {
+        "heading": "复核条件",
+        "text": "记录输入版本、运行环境及原始证据位置。未提供的条件标为待补。"
+      }
+    },
+    {
+      "layout": "table",
+      "section": "验收判定",
+      "title": "{{passed}} 项指标达到要求，{{pending}} 项待验证",
+      "notes": "逐行核对要求、实测、记录位置与判定。缺少实测记录时保留待验证。",
+      "dataset": "tests",
+      "columns": [
+        "要求",
+        "实测记录",
+        "证据位置",
+        "判定"
+      ],
+      "widths": [
+        0.85,
+        1.72,
+        1.1,
+        1.42,
+        0.77
+      ],
+      "highlight_where": {
+        "column": "判定",
+        "equals": "待验证"
+      }
+    },
+    {
+      "layout": "decision",
+      "section": "遗留项",
+      "title": "按测试编号关闭遗留项",
+      "notes": "如果材料给出了负责人和日期，在此页逐项列出；没有提供时标记待指定。",
+      "takeaway": "当前台账有 {{pending}} 项待验证。",
+      "items": [
+        "为待验证项补齐实测记录、环境和原始日志。",
+        "评审人根据补充记录更新判定。"
+      ]
+    }
+  ],
+  "facts": {
+    "passed": {
+      "dataset": "tests",
+      "count_where": {
+        "column": "判定",
+        "equals": "达到"
+      }
+    },
+    "pending": {
+      "dataset": "tests",
+      "count_where": {
+        "column": "判定",
+        "equals": "待验证"
+      }
+    }
+  }
+}
