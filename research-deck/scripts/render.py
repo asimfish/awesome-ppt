@@ -36,6 +36,7 @@ LAYOUTS = (
     "contrast",
     "process",
     "figure",
+    "video",
     "chart",
     "table",
     "equation",
@@ -160,15 +161,17 @@ def safe_figure(path, page):
         )
 
 
-def image_contain(slide, buf, x, y, w, h, alt):
+def contained_box(buf, x, y, w, h):
     with Image.open(buf) as img:
         iw, ih = img.size
     buf.seek(0)
     ratio = min(w / iw, h / ih)
     dw, dh = iw * ratio, ih * ratio
-    pic = slide.shapes.add_picture(
-        buf, I(x + (w - dw) / 2), I(y + (h - dh) / 2), I(dw), I(dh)
-    )
+    return I(x + (w - dw) / 2), I(y + (h - dh) / 2), I(dw), I(dh)
+
+
+def image_contain(slide, buf, x, y, w, h, alt):
+    pic = slide.shapes.add_picture(buf, *contained_box(buf, x, y, w, h))
     pic._element.nvPicPr.cNvPr.set("descr", alt)
     return pic
 
@@ -714,12 +717,28 @@ class Deck:
             self.txt(s["heading"], x, 3.09, w, 0.79, 24, 15, bold=True)
             self.txt(s["text"], x, 4.00, w, 2.10, 19, 14)
 
-    def figure(self, p):
+    def video(self, p):
+        required(p, ["file", "poster"])
+        movie = self.directory / p["file"]
+        if movie.suffix.lower() != ".mp4" or not movie.is_file():
+            raise ValueError("video 需要本地 MP4 演示片段")
+        self.figure(p, movie)
+
+    def figure(self, p, movie=None):
         required(p, ["file", "alt", "source"])
-        buf = safe_figure(self.directory / p["file"], p)
+        buf = safe_figure(self.directory / p["poster" if movie else "file"], p)
         caption = p.get("caption")
         fw = self.w if not caption else self.w * 0.70
-        image_contain(self.slide, buf, self.x, 1.95, fw, 4.55, p["alt"])
+        if movie is None:
+            image_contain(self.slide, buf, self.x, 1.95, fw, 4.55, p["alt"])
+        else:
+            shape = self.slide.shapes.add_movie(
+                str(movie),
+                *contained_box(buf, self.x, 1.95, fw, 4.55),
+                poster_frame_image=buf,
+                mime_type="video/mp4",
+            )
+            shape._element.nvPicPr.cNvPr.set("descr", p["alt"])
         if caption:
             self.rect(self.x + fw + 0.15, 2.27, 0.034, 3.72, "accent")
             self.txt(caption, self.x + fw + 0.42, 2.39, self.w - fw - 0.42, 3.5, 21, 14)

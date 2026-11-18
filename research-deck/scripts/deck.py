@@ -57,6 +57,8 @@ def asset_fields(spec):
     for page in spec["slides"]:
         if "file" in page:
             yield page, "file"
+        if page.get("layout") == "video":
+            yield page, "poster"
         if "plate" in page:
             yield page["plate"], "file"
     stationery = spec.get("stationery", {})
@@ -252,6 +254,12 @@ def main():
         return
     if args.action == "check":
         from checks import check, overview
+        from pdf_api import fitz
+
+        # Screen annotations in video slides can emit MuPDF diagnostics during
+        # text extraction. Keep stdout reserved for the machine-readable report.
+        if hasattr(fitz, "set_messages"):
+            fitz.set_messages(stream=sys.stderr)
 
         if args.style and not args.spec:
             cli.error("--style 需要与 --spec 一起使用")

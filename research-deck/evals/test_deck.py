@@ -17,6 +17,7 @@ from pptx.util import Inches
 SKILL = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SKILL / "scripts"))
 from data import Sources
+from checks import video_parts
 from native import fill, inventory, ordered_parts
 from pdf_api import fitz
 from render import Deck
@@ -41,6 +42,32 @@ class DeckChecks(unittest.TestCase):
         run = self.cli("starter", mode, draft)
         self.assertEqual(run.returncode, 0, run.stderr)
         return draft, json.loads((draft / "deck.json").read_text())
+
+    def test_video_draft_embeds_both_assets(self):
+        src, spec = self.start("conference")
+        frame = src / "frame.png"
+        Image.new("RGB", (64, 36), "green").save(frame)
+        clip = src / "demo.mp4"
+        # Only package identity is under test. Playback is checked with an actual clip.
+        clip.write_bytes(b"\x00\x00\x00\x18ftypmp42" + bytes(12))
+        spec["slides"] = [{
+            "layout": "video", "title": "Replay", "file": "demo.mp4",
+            "poster": "frame.png", "alt": "Recorded view", "source": "Team demo",
+        }]
+        (src / "deck.json").write_text(json.dumps(spec))
+        dest = self.work / "reusable"
+        copied = self.cli("draft", src / "deck.json", dest)
+        self.assertEqual(copied.returncode, 0, copied.stderr)
+        self.assertEqual((dest / clip.name).read_bytes(), clip.read_bytes())
+        self.assertEqual((dest / frame.name).read_bytes(), frame.read_bytes())
+        output = self.work / "replay.pptx"
+        built = self.cli("build", dest / "deck.json", output)
+        self.assertEqual(built.returncode, 0, built.stderr)
+        with ZipFile(output) as package:
+            media = video_parts(package, ordered_parts(package)[0])
+            self.assertEqual({item[0] for item in media}, {"image", "video"})
+            movie = next(name for name in package.namelist() if name.endswith(".mp4"))
+            self.assertEqual(package.read(movie), clip.read_bytes())
 
     def test_portable_draft_carries_external_and_nested_assets(self):
         src, spec = self.start("conference")

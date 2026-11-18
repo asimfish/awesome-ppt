@@ -8,7 +8,7 @@ from decimal import ROUND_HALF_UP, Decimal, localcontext
 from zipfile import ZipFile
 
 from lxml import etree
-from native import inventory, ordered_parts, query
+from native import inventory, ordered_parts, query, related_parts
 from pdf_api import fitz
 from render import Deck
 
@@ -86,7 +86,7 @@ def projection_issues(page):
     )
     scale = min(1, 1100 / max(page.rect.width, page.rect.height))
     raster = page.get_pixmap(
-        matrix=fitz.Matrix(scale, scale), colorspace=fitz.csRGB, alpha=False
+        matrix=fitz.Matrix(scale, scale), colorspace=fitz.csRGB, alpha=False, annots=False
     )
     lines, faint = [], []
     for block_id, block in enumerate(data["blocks"]):
@@ -123,6 +123,21 @@ def projection_issues(page):
     return lines, issues
 
 
+def video_parts(package, part):
+    slide = etree.fromstring(package.read(part))
+    links = related_parts(package, part)
+    result = []
+    for pic in query(slide, ".//p:pic[.//a:videoFile]"):
+        for rid in query(pic, ".//a:videoFile/@r:link|.//a:blip/@r:embed"):
+            target = links.get(rid)
+            if target is None or target[1] not in package.namelist():
+                result.append(None)
+            else:
+                info = package.getinfo(target[1])
+                result.append((target[0], info.file_size, info.CRC))
+    return result
+
+
 def compare_source(reference, source, actual, record):
     buf = io.BytesIO()
     reference.build().save(buf)
@@ -131,6 +146,10 @@ def compare_source(reference, source, actual, record):
         for i, (lhs, rhs) in enumerate(
             zip(ordered_parts(expected_package), ordered_parts(actual_package)), 1
         ):
+            if reference.pages[i - 1]["layout"] == "video" and (
+                video_parts(expected_package, lhs) != video_parts(actual_package, rhs)
+            ):
+                record("errors", i, "source_video", "内嵌视频或静态预览帧与工作稿不一致")
             if reference.pages[i - 1]["layout"] in ("dotplot", "unitgrid") and (
                 data_marks(expected_package, lhs) != data_marks(actual_package, rhs)
             ):

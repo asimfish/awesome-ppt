@@ -25,6 +25,7 @@
 | contrast | 对比两种方案、贡献或条件 | left 与 right 各有 heading、text |
 | process | 方法、路线、操作步骤 | steps 为 2–4 组 heading、text |
 | figure | 论文原图、系统界面、照片 | file、alt、source；可设 caption。PDF 图件须有 pdf_page（从 1 起）与 crop（左、上、右、下归一化坐标）。位图直接按比例置入 |
+| video | 实验轨迹对照、设备操作或产品演示 | file 为本地 MP4，poster 为同画幅的代表帧，alt 说明画面，source 记录出处。可用 caption 提示观众应观察的事件。PPTX 内嵌片段，PDF 可从静态帧读图 |
 | chart | 数值对比、趋势 | dataset、columns；可设 rows、reading、axis_title、min/max、decimals（0–6）。kind 选 column 或 line，最多 8 个类别、3 个系列 |
 | table | 结果对照、里程碑、逐项验收 | dataset、columns；可设 rows、widths（含行键列）、highlight（行键），或 highlight_where（按所示列的 column、equals 匹配状态）。每页最多 9 行数据、6 列 |
 | equation | 可编辑公式与符号解释 | latex 为不含美元定界符的单行表达式，另需 explanation、source。通过 Pandoc 生成 Office Math，附同一公式的透明位图用于兼容预览 |
