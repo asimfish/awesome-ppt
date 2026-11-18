@@ -70,6 +70,13 @@ def fit_size(text, w, h, preferred, minimum):
     raise ValueError(f"文字超过版面容量，请缩短或拆页：{text[:55]}")
 
 
+def caption_below(page):
+    position = page.get("caption_position", "side")
+    if position not in ("side", "below"):
+        raise ValueError("caption_position 应为 side 或 below")
+    return position == "below"
+
+
 def font(run, name, size, color, bold=False):
     run.font.name = name
     run.font.size = Pt(size)
@@ -728,18 +735,22 @@ class Deck:
         required(p, ["file", "alt", "source"])
         buf = safe_figure(self.directory / p["poster" if movie else "file"], p)
         caption = p.get("caption")
-        fw = self.w if not caption else self.w * 0.70
+        below = caption_below(p)
+        fw = self.w if below or not caption else self.w * 0.70
+        top = 1.80 if below and caption else 1.95
         if movie is None:
-            image_contain(self.slide, buf, self.x, 1.95, fw, 4.55, p["alt"])
+            image_contain(self.slide, buf, self.x, top, fw, 4.55, p["alt"])
         else:
             shape = self.slide.shapes.add_movie(
                 str(movie),
-                *contained_box(buf, self.x, 1.95, fw, 4.55),
+                *contained_box(buf, self.x, top, fw, 4.55),
                 poster_frame_image=buf,
                 mime_type="video/mp4",
             )
             shape._element.nvPicPr.cNvPr.set("descr", p["alt"])
-        if caption:
+        if caption and below:
+            self.txt(caption, self.x, 6.41, self.w, 0.40, 22, 18, "ink")
+        elif caption:
             self.rect(self.x + fw + 0.15, 2.27, 0.034, 3.72, "accent")
             self.txt(caption, self.x + fw + 0.42, 2.39, self.w - fw - 0.42, 3.5, 21, 14)
 
@@ -810,9 +821,12 @@ class Deck:
             "line": XL_CHART_TYPE.LINE_MARKERS,
         }[p.get("kind", "column")]
         reading = p.get("reading")
-        cw = self.w * (0.70 if reading else 1)
+        below = caption_below(p)
+        cw = self.w * (0.70 if reading and not below else 1)
+        height = 4.04 if reading and below else 4.40
+        label_size = 17 if below else 12
         chart = self.slide.shapes.add_chart(
-            kind, I(self.x), I(2.00), I(cw), I(4.40), data
+            kind, I(self.x), I(2.00), I(cw), I(height), data
         ).chart
         for auto_title in chart._chartSpace.xpath("./c:chart/c:autoTitleDeleted"):
             auto_title.set("val", "1")
@@ -830,15 +844,17 @@ class Deck:
             chart.legend.position = XL_LEGEND_POSITION.BOTTOM
             chart.legend.font.color.rgb = rgb(self.style["ink"])
             chart.legend.font.name = self.face
-            chart.legend.font.size = Pt(12)
+            chart.legend.font.size = Pt(label_size)
+            if below:
+                chart.legend.include_in_layout = False
         for ax in (chart.category_axis, chart.value_axis):
             ax.tick_labels.font.name = self.face
             ax.tick_labels.font.color.rgb = rgb(self.style["ink"])
-            ax.tick_labels.font.size = Pt(12)
+            ax.tick_labels.font.size = Pt(label_size)
         chart.value_axis.has_title = True
         axis_label = chart.value_axis.axis_title.text_frame.paragraphs[0].add_run()
         axis_label.text = p.get("axis_title", heads[1])
-        font(axis_label, self.face, 12, self.style["muted"])
+        font(axis_label, self.face, label_size, self.style["muted"])
         if "min" in p:
             chart.value_axis.minimum_scale = float(number(p["min"]))
         if "max" in p:
@@ -861,7 +877,7 @@ class Deck:
         labels.number_format = fmt
         labels.number_format_is_linked = False
         labels.font.name = self.face
-        labels.font.size = Pt(13)
+        labels.font.size = Pt(label_size + 1)
         labels.font.color.rgb = rgb(self.style["ink"])
         labels.position = (
             XL_LABEL_POSITION.ABOVE
@@ -873,7 +889,9 @@ class Deck:
             s.format.fill.solid()
             s.format.fill.fore_color.rgb = rgb(col)
             s.format.line.color.rgb = rgb(col)
-        if reading:
+        if reading and below:
+            self.txt(reading, self.x, 6.12, self.w, 0.50, 22, 18, "ink", True)
+        elif reading:
             self.rect(self.x + cw + 0.2, 2.35, 0.032, 3.3, "accent")
             self.txt(
                 reading,

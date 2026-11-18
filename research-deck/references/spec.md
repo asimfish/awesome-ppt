@@ -36,6 +36,8 @@
 
 封面可以用分栏构图。学术图版在 cover 页增加 `plate`，含 file、alt、caption、source。PDF 图版另需 pdf_page 和 crop。指标封面使用 `metrics`，传入 2–3 组 label 和 value，可在 value 中绑定 `{{fact}}`。图版、指标组和单位 stationery 各有独立构图。表格可用 caption 点出最重要的一行。
 
+`figure`、`video` 和 `chart` 可设 `"caption_position": "below"`。图或视频保持原始比例，在整行内居中，下方留一行给 `caption`。图表横跨正文区，轴标签和图例用 17 pt，数据标签用 18 pt，下方显示 `reading`。一句话放不下时，把实验细节移入备注。省略此字段或设为 `"side"` 时，沿用侧栏说明。
+
 ### 图表和文本共用一份数据
 
 例如 `scores.csv` 的表头为 `方法,成功率（%）`，行键为 A 和 B，值分别为 45.0 和 52.2。以下字段放在逐页稿顶层。

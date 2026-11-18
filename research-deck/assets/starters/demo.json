@@ -52,6 +52,7 @@
     },
     {
       "layout": "figure",
+      "caption_position": "below",
       "section": "演示",
       "title": "从旧称查询进入候选档案",
       "notes": "演示先看候选题名，再按年代与档号核对。替换为真实项目时使用已授权界面。",
@@ -62,6 +63,7 @@
     },
     {
       "layout": "chart",
+      "caption_position": "below",
       "section": "结果",
       "title": "混合检索的首条命中率达到 {{best}}",
       "notes": "三个方法使用相同的模拟查询集。横轴是方法，纵轴是百分数。",

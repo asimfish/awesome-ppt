@@ -91,6 +91,46 @@ class DeckChecks(unittest.TestCase):
             movie = next(name for name in package.namelist() if name.endswith(".mp4"))
             self.assertEqual(package.read(movie), clip.read_bytes())
 
+    def test_projection_caption_leaves_space_for_wide_media_and_chart_labels(self):
+        src, spec = self.start("conference")
+        chart = next(p for p in spec["slides"] if p["layout"] == "chart")
+        Image.new("RGB", (600, 160), "green").save(src / "wide.png")
+        (src / "demo.mp4").write_bytes(b"\x00\x00\x00\x18ftypmp42" + bytes(12))
+        figure = dict(layout="figure", title="Figure", file="wide.png",
+                      alt="Wide view", source="Lab", caption="Visible event")
+        video = dict(figure, layout="video", file="demo.mp4", poster="wide.png")
+        pages = []
+        for content in (figure, video, chart):
+            legacy = dict(content)
+            legacy.pop("caption_position", None)
+            pages.extend([legacy, dict(content, caption_position="below")])
+        spec["slides"] = pages
+        path = src / "deck.json"
+        path.write_text(json.dumps(spec))
+        output = self.work / "projection.pptx"
+        result = self.cli("build", path, output)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        slides = list(Presentation(output).slides)
+        def evidence(slide):
+            return next(s for s in slide.shapes if s.has_chart or
+                        s._element.xpath('./p:nvPicPr/p:cNvPr[@descr="Wide view"]'))
+
+        for idx in (0, 2, 4):
+            side, wide = evidence(slides[idx]), evidence(slides[idx + 1])
+            self.assertGreater(wide.width, side.width)
+            line = next(s for s in slides[idx + 1].shapes if s.has_text_frame and
+                        (s.text == "Visible event" or s.text.startswith("比向量检索高")))
+            self.assertGreater(line.top, wide.top + wide.height)
+            self.assertGreaterEqual(line.text_frame.paragraphs[0].runs[0].font.size.pt, 18)
+            if wide.has_chart:
+                self.assertEqual(wide.chart.category_axis.tick_labels.font.size.pt, 17)
+                self.assertEqual(wide.chart.plots[0].data_labels.font.size.pt, 18)
+            else:
+                self.assertAlmostEqual(wide.width / wide.height, 600 / 160, places=4)
+        pages[0]["caption_position"] = "unknown"
+        path.write_text(json.dumps(spec))
+        self.assertNotEqual(self.cli("build", path, self.work / "bad.pptx").returncode, 0)
+
     def test_portable_draft_carries_external_and_nested_assets(self):
         src, spec = self.start("conference")
         local = src / "art" / "plate.png"
