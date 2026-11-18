@@ -167,6 +167,11 @@ class Sources:
         if resolved.get("plate"):
             required(resolved["plate"], ["source"])
             citations.append(resolved["plate"]["source"])
+        if page["layout"] == "evidence_pair":
+            required(resolved, ["left", "right"])
+            for panel in (resolved["left"], resolved["right"]):
+                required(panel, ["source"])
+                citations.append(panel["source"])
         if resolved.get("source"):
             citations.insert(0, resolved["source"])
         resolved["citations"] = list(dict.fromkeys(citations))

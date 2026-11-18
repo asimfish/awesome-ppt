@@ -131,6 +131,51 @@ class DeckChecks(unittest.TestCase):
         path.write_text(json.dumps(spec))
         self.assertNotEqual(self.cli("build", path, self.work / "bad.pptx").returncode, 0)
 
+    def test_visual_evidence_preserves_picture_regions_and_panel_sources(self):
+        src, spec = self.start("demo")
+        wide = src / "view.png"
+        tall = self.work / "second.png"
+        Image.new("RGB", (360, 160), "green").save(wide)
+        Image.new("RGB", (100, 240), "blue").save(tall)
+        spec["slides"] = [
+            {"layout": "detail", "title": "Locate the field", "file": wide.name,
+             "alt": "Complete view", "source": "Trial A", "region": [0.25, 0.1, 0.75, 0.6],
+             "detail_label": "Selected field"},
+            {"layout": "evidence_pair", "title": "Compare observations",
+             "left": {"file": wide.name, "alt": "Overview", "heading": "First", "source": "Trial A"},
+             "right": {"file": str(tall), "alt": "Second view", "heading": "Second", "source": "Trial B"}},
+        ]
+        path = src / "deck.json"
+        path.write_text(json.dumps(spec))
+        draft = self.work / "copy"
+        self.assertEqual(self.cli("draft", path, draft).returncode, 0)
+        tall.unlink()
+        output = self.work / "visual.pptx"
+        result = self.cli("build", draft / "deck.json", output)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        zoom, pair = list(Presentation(output).slides)
+        whole, inset = [s for s in zoom.shapes if s._element.xpath("./p:nvPicPr")]
+        self.assertEqual(whole.image.sha1, inset.image.sha1)
+        self.assertEqual((inset.crop_left, inset.crop_top, inset.crop_right, inset.crop_bottom),
+                         (0.25, 0.1, 0.25, 0.4))
+        frame = next(s for s in zoom.shapes if s.name == "Detail region")
+        self.assertAlmostEqual(frame.left, whole.left + whole.width / 4, delta=1)
+        self.assertAlmostEqual(frame.top, whole.top + whole.height / 10, delta=1)
+        self.assertAlmostEqual(inset.width / inset.height, frame.width / frame.height, places=5)
+        self.assertGreater(inset.width, frame.width)
+        left, right = [s for s in pair.shapes if s._element.xpath("./p:nvPicPr")]
+        self.assertLess(left.left + left.width, right.left)
+        self.assertAlmostEqual(left.width / left.height, 360 / 160, places=5)
+        self.assertAlmostEqual(right.width / right.height, 100 / 240, places=5)
+        self.assertIn("Trial A", pair.notes_slide.notes_text_frame.text)
+        self.assertIn("Trial B", pair.notes_slide.notes_text_frame.text)
+        copied = draft / "deck.json"
+        invalid = json.loads(copied.read_text())
+        for rect in ([0, 0.5, 1, 0.5], [0, 0, 1.1, 1], [0, 1, 1], [0, 0, 1, 1]):
+            invalid["slides"][0]["region"] = rect
+            copied.write_text(json.dumps(invalid))
+            self.assertNotEqual(self.cli("build", copied, self.work / "bad.pptx").returncode, 0)
+
     def test_portable_draft_carries_external_and_nested_assets(self):
         src, spec = self.start("conference")
         local = src / "art" / "plate.png"

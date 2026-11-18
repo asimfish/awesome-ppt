@@ -12,6 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from zipfile import BadZipFile
 
+from data import required
 from native import fill, inventory
 from render import ASSETS, LAYOUTS, MODES, STYLES, Deck
 
@@ -59,6 +60,11 @@ def asset_fields(spec):
             yield page, "file"
         if page.get("layout") == "video":
             yield page, "poster"
+        if page.get("layout") == "evidence_pair":
+            required(page, ["left", "right"])
+            for panel in (page["left"], page["right"]):
+                required(panel, ["file"])
+                yield panel, "file"
         if "plate" in page:
             yield page["plate"], "file"
     stationery = spec.get("stationery", {})

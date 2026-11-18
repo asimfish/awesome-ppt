@@ -36,6 +36,8 @@ LAYOUTS = (
     "contrast",
     "process",
     "figure",
+    "detail",
+    "evidence_pair",
     "video",
     "chart",
     "table",
@@ -181,6 +183,37 @@ def image_contain(slide, buf, x, y, w, h, alt):
     pic = slide.shapes.add_picture(buf, *contained_box(buf, x, y, w, h))
     pic._element.nvPicPr.cNvPr.set("descr", alt)
     return pic
+
+
+def magnified_region(slide, buf, whole, region, box, alt, color):
+    """Highlight a source rectangle and show an editable crop of the same image."""
+    if (not isinstance(region, (list, tuple)) or len(region) != 4
+            or any(type(v) not in (float, int) for v in region)):
+        raise ValueError("region 需要归一化的左、上、右、下四个坐标")
+    left, top, right, bottom = region
+    if not (0 <= left < right <= 1 and 0 <= top < bottom <= 1):
+        raise ValueError("region 超出图幅或面积为零")
+    source_w = whole.width * (right - left)
+    source_h = whole.height * (bottom - top)
+    x, y, w, h = (I(v) for v in box)
+    scale = min(w / source_w, h / source_h)
+    if scale <= 1:
+        raise ValueError("局部图幅不足以放大 region，请选择更小的区域")
+    frame = slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE, round(whole.left + left * whole.width),
+        round(whole.top + top * whole.height), round(source_w), round(source_h),
+    )
+    frame.name = "Detail region"
+    frame.fill.background()
+    frame.line.color.rgb = rgb(color)
+    frame.line.width = Pt(2)
+    dw, dh = round(source_w * scale), round(source_h * scale)
+    buf.seek(0)
+    detail = slide.shapes.add_picture(buf, x + (w - dw) // 2, y + (h - dh) // 2, dw, dh)
+    detail.crop_left, detail.crop_top = left, top
+    detail.crop_right, detail.crop_bottom = 1 - right, 1 - bottom
+    detail._element.nvPicPr.cNvPr.set("descr", alt)
+    return detail
 
 
 def attach_formula(slide, latex, x, y, w, h, color):
@@ -730,6 +763,33 @@ class Deck:
         if movie.suffix.lower() != ".mp4" or not movie.is_file():
             raise ValueError("video 需要本地 MP4 演示片段")
         self.figure(p, movie)
+
+    def detail(self, p):
+        required(p, ["file", "alt", "source", "region", "detail_label"])
+        buf = safe_figure(self.directory / p["file"], p)
+        gap = 0.36
+        left_w = self.w * 0.60
+        right_x = self.x + left_w + gap
+        right_w = self.w - left_w - gap
+        whole = image_contain(self.slide, buf, self.x, 1.92, left_w, 4.64, p["alt"])
+        self.txt(p["detail_label"], right_x, 1.98, right_w, 0.72, 24, 18, "ink", True)
+        height = 2.74 if p.get("caption") else 3.75
+        magnified_region(self.slide, buf, whole, p["region"], (right_x, 2.79, right_w, height),
+                         p["detail_label"], self.style["accent"])
+        if p.get("caption"):
+            self.txt(p["caption"], right_x, 5.70, right_w, 0.89, 20, 17)
+
+    def evidence_pair(self, p):
+        required(p, ["left", "right"])
+        gap = 0.44
+        w = (self.w - gap) / 2
+        for x, item in ((self.x, p["left"]), (self.x + w + gap, p["right"])):
+            required(item, ["file", "alt", "heading", "source"])
+            self.txt(item["heading"], x, 1.86, w, 0.64, 24, 18, "ink", True)
+            buf = safe_figure(self.directory / item["file"], item)
+            image_contain(self.slide, buf, x, 2.58, w, 3.72 if p.get("caption") else 4.01, item["alt"])
+        if p.get("caption"):
+            self.txt(p["caption"], self.x, 6.34, self.w, 0.42, 22, 18)
 
     def figure(self, p, movie=None):
         required(p, ["file", "alt", "source"])

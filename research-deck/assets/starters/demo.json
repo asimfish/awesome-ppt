@@ -51,15 +51,16 @@
       ]
     },
     {
-      "layout": "figure",
-      "caption_position": "below",
+      "layout": "detail",
       "section": "演示",
       "title": "从旧称查询进入候选档案",
       "notes": "演示先看候选题名，再按年代与档号核对。替换为真实项目时使用已授权界面。",
       "file": "demo-search.png",
       "alt": "教学模拟界面中，西馆旧址修缮记录列在第一条。",
       "source": "教学模拟案例 · 原创界面示意",
-      "caption": "输入「西馆旧址」，在第一条候选中核对题名、年代与档号。"
+      "region": [0.04, 0.535, 0.54, 0.695],
+      "detail_label": "第一条候选档案",
+      "caption": "核对题名后，用年代 1954 和档号 A-017 定位记录。"
     },
     {
       "layout": "chart",

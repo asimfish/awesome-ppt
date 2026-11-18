@@ -25,6 +25,8 @@
 | contrast | 对比两种方案、贡献或条件 | left 与 right 各有 heading、text |
 | process | 方法、路线、操作步骤 | steps 为 2–4 组 heading、text |
 | figure | 论文原图、系统界面、照片 | file、alt、source；可设 caption。PDF 图件须有 pdf_page（从 1 起）与 crop（左、上、右、下归一化坐标）。位图直接按比例置入 |
+| detail | 界面字段、仪器读数、方法图的局部 | file、alt、source、region、detail_label，可设 caption。region 是相对于已显示图幅的归一化左、上、右、下坐标。整图保留选区框，局部使用同一张图片的可编辑裁切。PDF 先按 pdf_page 和 crop 取图 |
+| evidence_pair | 同一实验的两个时点、条件或观测 | left、right 各含 heading、file、alt、source；每边可单独指定 PDF 页和裁切区域。两幅图在等宽区域内按原比例显示，可用 caption 写一句共同的观察结论 |
 | video | 实验轨迹对照、设备操作或产品演示 | file 为本地 MP4，poster 为同画幅的代表帧，alt 说明画面，source 记录出处。可用 caption 提示观众应观察的事件。PPTX 内嵌片段，PDF 可从静态帧读图 |
 | chart | 数值对比、趋势 | dataset、columns；可设 rows、reading、axis_title、min/max、decimals（0–6）。kind 选 column 或 line，最多 8 个类别、3 个系列 |
 | table | 结果对照、里程碑、逐项验收 | dataset、columns；可设 rows、widths（含行键列）、highlight（行键），或 highlight_where（按所示列的 column、equals 匹配状态）。每页最多 9 行数据、6 列 |
